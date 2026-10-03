@@ -1,0 +1,22 @@
+{
+  "name": "Comic Toolbox Gym",
+  "short_name": "Comic Gym",
+  "description": "A practice gym for the techniques in The Comic Toolbox: quizzes, flashcards, timed writing and comic builders. Works offline.",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf6ee",
+  "theme_color": "#4f35e0",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ],
+  "shortcuts": [
+    {"name": "10-minute workout", "url": "./index.html#/workout"},
+    {"name": "Journal", "url": "./index.html#/journal"}
+  ]
+}

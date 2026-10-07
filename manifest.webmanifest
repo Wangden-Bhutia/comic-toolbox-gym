@@ -2,7 +2,7 @@
   "name": "Comic Toolbox Gym",
   "short_name": "Comic Gym",
   "description": "A practice gym for the techniques in The Comic Toolbox: quizzes, flashcards, timed writing and comic builders. Works offline.",
-  "id": "./",
+  "id": "/comic-toolbox-gym/",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

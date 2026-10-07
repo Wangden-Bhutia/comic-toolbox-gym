@@ -1,5 +1,5 @@
 /* Comic Toolbox Gym service worker. Generated asset list: run `node tools/build-sw.js` after adding files. */
-const VERSION = 'ctg-2260477262';
+const VERSION = 'ctg-2260477263';
 const ASSETS = [
   "./",
   "css/style.css",

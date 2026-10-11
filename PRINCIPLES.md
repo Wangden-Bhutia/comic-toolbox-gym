@@ -1,6 +1,7 @@
 # Comic Toolbox Gym — Design Principles (draft)
 
-Status: DRAFT — under active review. Once stable, distill into CLAUDE.md.
+Status: STABLE — audited against the codebase and platform constraints on
+2026-10-11. Distilled into CLAUDE.md.
 
 This document is the source of truth for *why* the app is shaped the way it
 is. Code changes, content changes, and UI changes should be checkable
@@ -62,11 +63,16 @@ it or doesn't.
   and production only 44%.
 - **"Mastered" (92%+) must mean**: the user has written and self-reviewed
   this tool's techniques repeatedly over time with rising self-scores —
-  not merely "answered enough quiz questions right." A tool should not be
-  able to reach Mastered on quiz+cards alone, however high `avail` lets it
-  go when `ex`/`fix` don't exist yet for that tool — see §3 parity rule;
-  until a tool has at least one exercise and one fix-it, cap its visible
-  level at "Sharp," not "Mastered," regardless of raw pct.
+  not merely "answered enough quiz questions right." Today, `G.mastery()`
+  normalizes `avail` to whatever content *exists* for a tool
+  (`js/core.js:189-202`) — a tool whose content is missing an exercise or
+  fix-it can reach 100% pct using only lesson+quiz+cards, which is exactly
+  the loophole this principle closes: **cap the displayed level at "Sharp"
+  (not "Mastered") for any tool whose *content* has zero exercises or zero
+  fix-it entries** (`CTG.EXERCISES`/`CTG.FIX` filtered by tool, independent
+  of whether the user has done them). This is a content-completeness gate,
+  not a user-effort gate — the existing pct math already handles user
+  effort correctly.
 - Streaks/XP stay, but are secondary chips (top bar, Progress page), never
   the dominant element of the dashboard hero (see §4).
 - **Streak integrity:** a day only counts toward the streak if it includes
@@ -94,11 +100,18 @@ it or doesn't.
   tools," and the 8-tile quick-launch grid all move below the fold or
   onto the Progress/Practice hub pages. The install-card stays but
   collapses once dismissed or installed (already does).
-- **Color semantics:** `--accent` (yellow) means *writing in progress /
-  the thing you're actively producing* only — prompt box, active timer
-  state. It must not also mean "achievement" or "reveal model answer."
-  Give fix-it's reveal button and achievement stars their own treatment
-  (e.g. brand-soft background, not accent).
+- **Color semantics:** audited the actual usage — `--accent` (yellow)
+  currently marks *both* decorative content ("Ask yourself" card border,
+  the prompt box, the saved-writing border in the journal) *and* two
+  primary action buttons (`js/runners.js:169` "Finish and review",
+  `js/runners.js:292` "Compare with a model and self-check"). Achievement
+  stars are already a separate hardcoded gold (`css/style.css:245`,
+  `#e0a100`) and are *not* part of this conflict — correcting the earlier
+  review on that point. The real fix: `--accent` should mean "this is the
+  content you're producing or being prompted with" (box borders,
+  promptbox) only; the two CTA buttons that currently borrow it should
+  move to `.btn.primary` or a new deliberate "commit" style, so a button's
+  color is never confused with a content marker.
 - **Component budget:** consolidate `.chip`, `.tag`, `.cnt`, `.lv*` into
   a single badge component with 3 visual weights (neutral / positive /
   brand), rather than ~6 ad hoc styles.
@@ -114,18 +127,31 @@ it or doesn't.
 ## 5. Habit / accountability rules
 
 (From the earlier review — the app currently has no reminder mechanism.)
-- **In scope: local notifications via the service worker.** Add an
-  opt-in daily reminder (`Notification` + `Notification.requestPermission`,
-  scheduled via the SW, e.g. Periodic Background Sync where supported,
-  with a plain `setTimeout`-based in-app nudge as the fallback for
-  browsers/platforms without background delivery). This is a real,
-  scoped feature to build — not deferred.
-- Reminder copy should name what's due (e.g. "3 cards and a 5-minute
-  sprint are waiting") rather than a generic "come back" push — ties the
-  reminder to the production-first philosophy in §0/§1.
-- Settings must let the user pick a time and turn it off entirely; default
-  off until explicitly enabled (don't surprise-request permission on
-  first load).
+
+**Feasibility audit, corrected from the original recommendation:** without
+a push server (ruled out in §7), there is no reliable way to deliver a
+notification while the app is fully closed. Periodic Background Sync
+needs no server, but it is Chromium-only (Android/desktop Chrome, with an
+engagement-score requirement), gives no guaranteed time-of-day, and has
+**no support on iOS Safari at all** — which matters here because the
+README's own install instructions are written for iOS Safari first. Don't
+let the feature's name ("daily reminder") promise more than the platform
+can deliver. Scope it in two honest tiers:
+
+- **Tier 1 (all platforms, in scope now): in-app catch-up nudge.** On
+  boot, if the user missed yesterday (no qualifying activity — see
+  streak-integrity rule below) or hasn't practiced today by a settings-
+  configured local time, show a prominent, named-what's-due banner
+  (e.g. "3 cards and a 5-minute sprint are waiting") rather than a
+  generic "come back." This only fires while the app is opened, but it's
+  guaranteed to work everywhere and needs no permission prompt.
+- **Tier 2 (best-effort, Chromium/Android/desktop only): background
+  notification** via `Notification` + `Periodic Background Sync`,
+  gated behind an explicit opt-in toggle in Settings (never
+  auto-requested on first load). Document in-app that this tier may not
+  fire reliably or at all on iOS/Safari, rather than silently failing.
+- Settings must let the user pick a time and turn either tier off
+  entirely.
 - Streak integrity threshold: see §2 — a streak day requires a production
   item or a completed session, not a single trivial action.
 
@@ -137,9 +163,10 @@ it or doesn't.
 
 ## 7. Explicit non-goals
 
-- No backend, no accounts, no cross-device sync. Local notifications
-  (§5) are the one exception that touches "new capability beyond pure
-  static files," and even that stays client-side (no push server).
+- No backend, no accounts, no cross-device sync, no push server. The
+  in-app catch-up nudge and best-effort background notification (§5) are
+  the one exception that touches "new capability beyond pure static
+  files," and both stay fully client-side.
 - No social features (sharing streaks, leaderboards, public journals).
 - No AI/external judging of writing quality in this phase — self-review
   stays the mechanism. (Flagged as an open question for later, not ruled

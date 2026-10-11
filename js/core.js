@@ -103,6 +103,11 @@ function defaults(){return {v:1,settings:{theme:'auto',sound:true,goal:10,noedit
 G.S = defaults();
 G.load = function(){
   try{var raw=localStorage.getItem(KEY); if(raw){var o=JSON.parse(raw); G.S=G.merge(defaults(),o);}}catch(e){console.warn('load failed',e);}
+  // Migration: streak now requires a "qualifying" (production or completed-
+  // session) day, not just any item. Grandfather pre-existing days so this
+  // tightened rule doesn't retroactively erase streaks already earned under
+  // the old one (PRINCIPLES.md §2).
+  for(var k in G.S.activity){var a=G.S.activity[k]; if(a&&a.prod===undefined) a.prod=a.items||0;}
 };
 G.merge = function(base,o){for(var k in o){if(o[k]&&typeof o[k]==='object'&&!Array.isArray(o[k])&&base[k]&&typeof base[k]==='object'&&!Array.isArray(base[k])) G.merge(base[k],o[k]); else base[k]=o[k];}return base;};
 var saveT=null;
@@ -131,20 +136,25 @@ G.beep = function(){
 };
 
 /* ---------- Activity, XP, streak ---------- */
-G.addActivity = function(o){ // {mins, xp, items}
-  var k=G.today(); var a=G.S.activity[k]||(G.S.activity[k]={mins:0,xp:0,items:0});
+// o: {mins, xp, items, qualifies}. `qualifies` (PRINCIPLES.md §2/§5) marks a
+// production item (exercise/fix-it save, lab project) or a *completed*
+// quiz/card/workout session as streak-eligible; a single answered question
+// or rated card does not, on its own, keep a streak alive.
+G.addActivity = function(o){
+  var k=G.today(); var a=G.S.activity[k]||(G.S.activity[k]={mins:0,xp:0,items:0,prod:0});
   a.mins=Math.round((a.mins+(o.mins||0))*10)/10; a.xp+=o.xp||0; a.items+=o.items||0;
+  if(o.qualifies) a.prod=(a.prod||0)+1;
   G.S.stats.mins=Math.round((G.S.stats.mins+(o.mins||0))*10)/10; G.S.stats.xp+=o.xp||0;
   G.save(); G.checkAch();
 };
 G.streak = function(){
   var n=0, d=new Date(); var k=G.dateKey(d);
-  if(!G.S.activity[k]||!G.S.activity[k].items){ d.setDate(d.getDate()-1); }
-  while(true){var a=G.S.activity[G.dateKey(d)]; if(a&&a.items>0){n++;d.setDate(d.getDate()-1);} else break;}
+  if(!G.S.activity[k]||!G.S.activity[k].prod){ d.setDate(d.getDate()-1); }
+  while(true){var a=G.S.activity[G.dateKey(d)]; if(a&&a.prod>0){n++;d.setDate(d.getDate()-1);} else break;}
   return n;
 };
 G.bestStreak = function(){
-  var keys=Object.keys(G.S.activity).filter(function(k){return G.S.activity[k].items>0;}).sort(); var best=0,cur=0,prev=null;
+  var keys=Object.keys(G.S.activity).filter(function(k){return G.S.activity[k].prod>0;}).sort(); var best=0,cur=0,prev=null;
   keys.forEach(function(k){var p=k.split('-');var dn=G.dayNum(new Date(+p[0],+p[1]-1,+p[2])); if(prev!==null&&dn===prev+1)cur++; else cur=1; prev=dn; if(cur>best)best=cur;});
   return best;
 };
@@ -185,8 +195,10 @@ G.journalOf = function(toolId,kind){return G.S.journal.filter(function(j){return
 /* ---------- Mastery ---------- */
 G.LEVELS = ['Unseen','Seen','Practising','Capable','Sharp','Mastered'];
 G.levelOf = function(pct,any){ if(pct>=92)return 5; if(pct>=75)return 4; if(pct>=50)return 3; if(pct>=25)return 2; if(pct>=8||any)return 1; return 0; };
+// Weights (PRINCIPLES.md §2): production (ex+fix) = 55%, recall (quiz+cards)
+// = 40%, lesson = 5% gate. Was 8/24/24/28/16 (recall 48%, production 44%).
 G.mastery = function(toolId){
-  var parts={}, earn=0, avail=0, W={lesson:8,quiz:24,cards:24,ex:28,fix:16};
+  var parts={}, earn=0, avail=0, W={lesson:5,quiz:20,cards:20,ex:40,fix:15};
   var qs=G.byTool(CTG.QUIZ,toolId), cs=G.byTool(CTG.CARDS,toolId), fs=G.byTool(CTG.FIX,toolId);
   // lesson
   parts.lesson = G.S.read[toolId]?1:0; avail+=W.lesson; earn+=W.lesson*parts.lesson;
@@ -202,7 +214,13 @@ G.mastery = function(toolId){
   }
   var pct=Math.round(100*earn/avail);
   var any=parts.lesson>0||G.journalOf(toolId).length>0||qs.some(function(q){return G.S.srs['q:'+q.id];})||cs.some(function(c){return G.S.srs['c:'+c.id];});
-  return {pct:pct,level:G.levelOf(pct,any),parts:parts};
+  var lvl=G.levelOf(pct,any);
+  // Content-completeness gate (PRINCIPLES.md §2): a tool whose content has
+  // no exercise or no fix-it can't reach "Mastered" on quiz+cards alone,
+  // no matter how high pct runs once avail excludes the missing parts.
+  var exContent=CTG.EXERCISES.filter(function(e){return e.tool===toolId;});
+  if(lvl>=5 && (!exContent.length||!fs.length)) lvl=4;
+  return {pct:pct,level:lvl,parts:parts,contentComplete:!!(exContent.length&&fs.length)};
 };
 G.masteryAll = function(){var m={};CTG.TOOLS.forEach(function(t){m[t.id]=G.mastery(t.id);});return m;};
 G.overall = function(){var m=G.masteryAll(),s=0;CTG.TOOLS.forEach(function(t){s+=m[t.id].pct;});return Math.round(s/CTG.TOOLS.length);};

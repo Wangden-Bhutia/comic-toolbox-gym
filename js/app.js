@@ -115,7 +115,7 @@ function showHelp(){
 var gPending=false, gT=null;
 document.addEventListener('keydown',function(e){
   var tg=e.target, typing=tg&&(/INPUT|TEXTAREA|SELECT/.test(tg.tagName)||tg.isContentEditable);
-  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){var fb=G.$('.wfoot .btn.accent'); if(fb&&!fb.disabled){e.preventDefault();fb.click();} return;}
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){var fb=G.$('.wfoot .btn.primary'); if(fb&&!fb.disabled){e.preventDefault();fb.click();} return;}
   if(typing||e.ctrlKey||e.metaKey||e.altKey) return;
   if(e.key==='?'){e.preventDefault();showHelp();return;}
   if(e.key==='/'){var s=G.$('#jsearch'); if(s){e.preventDefault();s.focus();} return;}

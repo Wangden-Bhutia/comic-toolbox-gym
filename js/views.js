@@ -46,7 +46,7 @@ V.dashboard=function(root){
   root.appendChild(stats);
   // week strip
   var strip=h('div',{class:'week'}); var d=new Date(); d.setDate(d.getDate()-6);
-  for(var i=0;i<7;i++){var k=G.dateKey(d), a=G.S.activity[k]; var on=a&&a.items>0;
+  for(var i=0;i<7;i++){var k=G.dateKey(d), a=G.S.activity[k]; var on=a&&a.prod>0;
     strip.appendChild(h('div',{class:'day '+(on?'on':'')+(k===G.today()?' today':''),title:k+(on?': '+a.mins+' min':'')},h('span',{},['S','M','T','W','T','F','S'][d.getDay()]),h('i',{},on?G.icon('check',14):null))); d.setDate(d.getDate()+1);}
   var cols=h('div',{class:'cols'});
   cols.appendChild(h('section',{class:'card'},h('h3',{},'This week'),strip,h('p',{class:'muted small'},'Today: '+todayAct.mins+' min, '+todayAct.xp+' XP, '+todayAct.items+' items')));
@@ -320,7 +320,7 @@ V.workout=function(root){
       box.appendChild(h('div',{class:'stephead'},h('h2',{},'5-minute writing sprint'),h('p',{class:'muted'},'This is the part that builds the skill. Quantity first.')));
       var b4=h('div',{}); box.appendChild(b4); G.writeSession(b4,s.ex,{minutes:5,sprint:true,onDone:function(r){s.res=r;cont();}});
     } else {
-      var key=G.today(); var first=!G.S.workouts[key]; G.S.workouts[key]=(G.S.workouts[key]||0)+1; if(first)G.S.stats.workouts++; G.addActivity({xp:first?20:5,items:1,mins:0}); G.save();
+      var key=G.today(); var first=!G.S.workouts[key]; G.S.workouts[key]=(G.S.workouts[key]||0)+1; if(first)G.S.stats.workouts++; G.addActivity({xp:first?20:5,items:1,mins:0,qualifies:true}); G.save();
       var gained=G.S.stats.xp-xp0, mins=Math.round((Date.now()-t0)/60000);
       var qs=steps.filter(function(x){return x.type==='quiz';})[0], sp2=steps.filter(function(x){return x.type==='sprint';})[0];
       box.appendChild(h('section',{class:'panel center results'},h('div',{class:'eyebrow'},'Workout complete'),h('h2',{},'Nice work. That is a rep.'),

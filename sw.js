@@ -1,7 +1,10 @@
 /* Comic Toolbox Gym service worker. Generated asset list: run `node tools/build-sw.js` after adding files. */
-const VERSION = 'ctg-2260477263';
+const VERSION = 'ctg-cb1198b2ab';
 const ASSETS = [
   "./",
+  ".nojekyll",
+  "CLAUDE.md",
+  "PRINCIPLES.md",
   "css/style.css",
   "icons/apple-touch-icon.png",
   "icons/favicon-32.png",

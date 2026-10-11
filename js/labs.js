@@ -74,8 +74,8 @@ function builder(root,bid,pid){
       h('button',{type:'button',class:'btn primary',disabled:empty,id:'save-proj',onclick:function(){
         var sc=calc(); var meta={builder:B.id,selfScore:sc,checks:raters.map(function(r){return r.get();}),steps:B.steps.length,filled:B.steps.filter(function(s){return data[s.k]&&data[s.k].trim();}).length};
         var title=titleIn.value.trim()||(B.name+' project');
-        if(proj){proj.title=title;proj.content=out;proj.fields=JSON.parse(JSON.stringify(data));proj.meta=meta;proj.updated=Date.now();G.save();}
-        else {proj=G.addJournal({kind:'project',tool:B.tool,title:title,prompt:B.name,content:out,fields:JSON.parse(JSON.stringify(data)),meta:meta}); G.S.stats.ex++; G.addActivity({mins:8,xp:25,items:1});}
+        if(proj){proj.title=title;proj.content=out;proj.fields=JSON.parse(JSON.stringify(data));proj.meta=meta;proj.updated=Date.now();G.save();G.addActivity({mins:4,xp:10,items:1,qualifies:true});}
+        else {proj=G.addJournal({kind:'project',tool:B.tool,title:title,prompt:B.name,content:out,fields:JSON.parse(JSON.stringify(data)),meta:meta}); G.S.stats.ex++; G.addActivity({mins:8,xp:25,items:1,qualifies:true});}
         G.S.stats.words+=G.wordCount(out); delete G.S.drafts[dkey]; G.save();
         G.toast('Project saved to your journal.','ok'); G.announce('Project saved.');
         G.clear(main); main.appendChild(h('div',{class:'center results'},h('h2',{},'Saved.'),h('p',{class:'muted'},'Find it under Journal or Labs. Come back and keep refining; rewriting is where comedy gets good.'),

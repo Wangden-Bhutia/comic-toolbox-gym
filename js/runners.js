@@ -82,7 +82,7 @@ G.quizSession = function(box,opts){
     var mins=(Date.now()-startT)/60000;
     var pct=Math.round(100*right/total);
     var res={total:total,right:right,missed:missed,pct:pct};
-    G.addActivity({xp:Math.round(pct/10),mins:0});
+    if(total>0) G.addActivity({xp:Math.round(pct/10),mins:0,qualifies:true});
     if(opts.onDone){return opts.onDone(res);}
     G.clear(box);
     var uniq=[],seen={}; missed.forEach(function(m){if(!seen[m.id]){seen[m.id]=1;uniq.push(m);}});
@@ -144,7 +144,9 @@ G.cardSession = function(box,opts){
     el.addEventListener('touchend',end); el.addEventListener('touchcancel',function(){on=false;el.style.transform='';});
   }
   function finish(){
-    destroy(); var res={total:total,ratings:ratings}; if(opts.onDone)return opts.onDone(res);
+    destroy(); var res={total:total,ratings:ratings};
+    if(total>0) G.addActivity({xp:0,mins:0,qualifies:true}); // a completed non-empty deck counts toward the streak; individual card ratings don't
+    if(opts.onDone)return opts.onDone(res);
     G.clear(box);
     box.appendChild(h('div',{class:'panel center results'},h('h2',{},'Deck done.'),h('div',{class:'bigstat'},total+' cards'),
       h('p',{class:'muted'},'Again '+ratings[0]+' | Hard '+ratings[1]+' | Good '+ratings[2]+' | Easy '+ratings[3]),
@@ -166,7 +168,7 @@ G.writeSession = function(box,ex,opts){
   var timerEl=h('div',{class:'timer',role:'timer','aria-live':'off'},G.fmtTime(total));
   var tbar=G.bar(0,G.hue(ex.tool)); var countEl=h('div',{class:'count','aria-live':'polite'}); var banner=h('div',{class:'banner',hidden:true});
   var startBtn=h('button',{type:'button',class:'btn primary',onclick:function(){start();}},G.icon('clock',16),'Start timer');
-  var finBtn=h('button',{type:'button',class:'btn accent',onclick:function(){review();}},'Finish and review');
+  var finBtn=h('button',{type:'button',class:'btn primary',onclick:function(){review();}},'Finish and review');
   function vals(){
     if(ex.mode==='rows'){var o={};ex.fields.forEach(function(f,i){o[f.k]=fields[i].value;});return o;}
     return ta.value;
@@ -262,7 +264,7 @@ G.writeSession = function(box,ex,opts){
         meta:{secs:Math.round(elapsed),count:c,target:ex.target,unit:unit(),words:w,selfScore:sc,checks:raters.map(function(r){return r.get();}),win:win.value.trim(),sprint:!!opts.sprint}});
       var before=G.S.stats.ex; G.S.stats.ex++; G.S.stats.words+=w; delete G.S.drafts[ex.id];
       var xp=10+Math.min(c,20)+Math.round(sc/10);
-      G.addActivity({mins:Math.max(1,elapsed/60),xp:xp,items:1});
+      G.addActivity({mins:Math.max(1,elapsed/60),xp:xp,items:1,qualifies:true});
       if(opts.onDone) return opts.onDone({entry:entry,score:sc,count:c,xp:xp});
       var m=G.mastery(ex.tool);
       G.clear(box);
@@ -289,7 +291,7 @@ G.fixSession = function(box,fx,opts){
   var hint=h('div',{class:'note',hidden:true},fx.hint);
   var model=h('div',{class:'modelbox',hidden:true},h('span',{class:'lab'},'One possible answer (yours may be better)'),h('p',{},fx.model));
   var rbox=h('div',{class:'review-inline',hidden:true});
-  var rb=h('button',{type:'button',class:'btn accent',disabled:true,onclick:reveal},'Compare with a model and self-check');
+  var rb=h('button',{type:'button',class:'btn primary',disabled:true,onclick:reveal},'Compare with a model and self-check');
   function reveal(){
     if(revealed)return; revealed=true; model.hidden=false; rb.hidden=true;
     var checks=fx.checks.concat(['My version is clearer or funnier than the flat original.']);
@@ -298,7 +300,7 @@ G.fixSession = function(box,fx,opts){
     var save=h('button',{type:'button',class:'btn primary',onclick:function(){
       var v=calc(); save.disabled=true;
       G.addJournal({kind:'fixit',tool:fx.tool,title:'Fix-it: '+(tool?tool.name:''),prompt:fx.flat,content:ta.value.trim(),meta:{fixId:fx.id,selfScore:v,checks:raters.map(function(r){return r.get();}),model:fx.model}});
-      G.S.stats.fix++; G.S.stats.words+=G.wordCount(ta.value); var xp=8+Math.round(v/10); G.addActivity({mins:2,xp:xp,items:1});
+      G.S.stats.fix++; G.S.stats.words+=G.wordCount(ta.value); var xp=8+Math.round(v/10); G.addActivity({mins:2,xp:xp,items:1,qualifies:true});
       if(opts.onDone) return opts.onDone({score:v,xp:xp});
       G.clear(rbox); rbox.appendChild(h('div',{class:'panel center'},h('h3',{},'Saved. +'+xp+' XP'),h('div',{class:'row center'},h('button',{type:'button',class:'btn primary',onclick:function(){if(opts.again)opts.again();}},'Another challenge'),h('a',{class:'btn',href:'#/journal'},'Journal'))));
     }},G.icon('check',16),'Save to journal');

@@ -25,6 +25,10 @@ V.dashboard=function(root){
   var next=G.nextUnread(); var weak=G.weakest(5,true);
   var read=Object.keys(G.S.read).length;
   root.appendChild(head('Welcome back'+nm,'The comic toolbox is a practice gym. Ten minutes a day beats a long cram.'));
+  // Above the fold (PRINCIPLES.md/CLAUDE.md §UX): greeting + one hero CTA
+  // only. The streak chip already lives in the persistent topbar, so it
+  // doesn't need a second copy here. Everything else moves below a clear
+  // section break so it isn't competing with the hero's CTA.
   var hero=h('section',{class:'hero card'},
     h('div',{class:'hero-main'},
       h('div',{class:'eyebrow'},doneToday?'Workout complete':'Today\'s workout'),
@@ -34,9 +38,11 @@ V.dashboard=function(root){
         next?h('a',{class:'btn lg',href:'#/tool/'+next.id},'Next lesson: '+next.name):h('a',{class:'btn lg',href:'#/map'},'Open skill map'))),
     h('div',{class:'hero-side'},
       G.ring(ov,200,92,ov+'%'),h('div',{class:'ringlab'},'overall mastery')));
-  var slot=h('div',{id:'install-slot'}); var ic=G.installCard(); if(ic)slot.appendChild(ic); root.appendChild(slot);
   root.appendChild(hero);
-  // stats
+
+  // ---- below the fold ----
+  root.appendChild(h('h3',{class:'sec'},'Your week'));
+  var slot=h('div',{id:'install-slot'}); var ic=G.installCard(); if(ic)slot.appendChild(ic); root.appendChild(slot);
   var stats=h('section',{class:'stats'},
     stat('flame',st+' day'+(st===1?'':'s'),'streak',st>0?'Best '+Math.max(st,G.bestStreak()):'Practise today to start one'),
     stat('cards',dueC,'cards due',G.newCards(null,true).length+' new available'),
@@ -56,19 +62,11 @@ V.dashboard=function(root){
   else wk.appendChild(h('ul',{class:'tlist'},weak.map(function(w){return h('li',{},h('a',{href:'#/tool/'+w.t.id},h('span',{class:'dot',style:'--hue:'+G.hue(w.t.id)}),w.t.name),h('span',{class:'muted small'},G.LEVELS[w.m.level]+' · '+w.m.pct+'%'));})));
   cols.appendChild(wk);
   root.appendChild(cols);
-  // quick launch
-  root.appendChild(h('h3',{class:'sec'},'Practice'));
-  root.appendChild(h('div',{class:'tiles'},
-    tile('quiz','Quiz drills','Identify the tool and spot the weak premise','#/quiz'),
-    tile('cards','Flashcards','Spaced repetition for every concept','#/cards'),
-    tile('pen','Timed writing','Randomised prompts, timer, self-review','#/write'),
-    tile('wrench','Fix-it','Rewrite flat lines with the right tool','#/fix'),
-    tile('flask','Premise Lab','Build a comic premise step by step','#/lab/premise'),
-    tile('user','Character Builder','Assemble a comic character','#/lab/character'),
-    tile('route','Throughline','Story in ten sentences','#/lab/throughline'),
-    tile('book','Journal','Everything you have written','#/journal')));
+  // The old 8-tile quick-launch grid duplicated the Practice hub almost
+  // exactly (js/views.js V.practice) — one link there instead of repeating
+  // the same surfaces (PRINCIPLES.md §4 component budget / one CTA).
+  root.appendChild(h('p',{class:'row center'},h('a',{class:'btn ghost',href:'#/practice'},'More ways to practice',G.icon('arrow',16))));
   function stat(ic,v,l,sub){return h('div',{class:'stat card'},h('div',{class:'si'},G.icon(ic,20)),h('div',{class:'sv'},String(v)),h('div',{class:'sl'},l),h('div',{class:'ss muted small'},sub));}
-  function tile(ic,t,s,href){return h('a',{class:'tile card',href:href},h('div',{class:'ti'},G.icon(ic,22)),h('b',{},t),h('span',{class:'muted small'},s));}
 };
 
 /* ---------- SKILL MAP ---------- */

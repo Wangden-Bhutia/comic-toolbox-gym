@@ -272,8 +272,15 @@ G.mastery = function(toolId){
   parts.lesson = G.S.read[toolId]?1:0; avail+=W.lesson; earn+=W.lesson*parts.lesson;
   if(qs.length){var s=0;qs.forEach(function(q){s+=G.srsStrength('q:'+q.id);}); parts.quiz=s/qs.length; avail+=W.quiz; earn+=W.quiz*parts.quiz;}
   if(cs.length){var s2=0;cs.forEach(function(c){s2+=G.srsStrength('c:'+c.id);}); parts.cards=s2/cs.length; avail+=W.cards; earn+=W.cards*parts.cards;}
-  var ex=G.journalOf(toolId,'exercise').slice(0,3);
-  var avg=ex.length?ex.reduce(function(a,j){return a+((j.meta&&j.meta.selfScore)||50);},0)/ex.length/100:0;
+  // Recency-weighted over the last 10 exercises (not a flat average of just
+  // the last 3): a tool's score still responds to continued practice past
+  // the 3rd rep instead of freezing there, while recent work counts more
+  // than older work. Full weight still unlocks at 3 exercises, so early
+  // progress isn't slower to register than before (PRINCIPLES.md §2 audit).
+  var ex=G.journalOf(toolId,'exercise').slice(0,10);
+  var wsum=0, ssum=0;
+  ex.forEach(function(j,i){var w=Math.pow(0.85,i); wsum+=w; ssum+=w*((j.meta&&j.meta.selfScore)||50);});
+  var avg=ex.length?ssum/wsum/100:0;
   parts.ex=Math.min(1,ex.length/3)*avg; avail+=W.ex; earn+=W.ex*parts.ex;
   if(fs.length){
     var done={},sc={}; G.journalOf(toolId,'fixit').forEach(function(j){var id=j.meta&&j.meta.fixId; if(id&&!done[id]){done[id]=1;sc[id]=(j.meta.selfScore||50)/100;}});
@@ -295,6 +302,27 @@ G.overall = function(){var m=G.masteryAll(),s=0;CTG.TOOLS.forEach(function(t){s+
 G.weakest = function(n,onlyStarted){
   var m=G.masteryAll(); var arr=CTG.TOOLS.filter(function(t){return !onlyStarted||m[t.id].level>0;}).map(function(t){return {t:t,m:m[t.id]};});
   arr.sort(function(a,b){return a.m.pct-b.m.pct;}); return arr.slice(0,n||5);
+};
+// Most recent exercise/fix-it save for a tool (journal is newest-first), or
+// null if it's never been produced on. Used for spaced re-practice below —
+// quiz/cards get real SRS scheduling, but writing/fix-it have no scheduling
+// of their own, so this re-uses the journal's own timestamps as a cheap
+// "last seen" signal rather than a new data structure (PRINCIPLES.md §2 audit).
+G.lastPracticed = function(toolId){
+  var js=G.journalOf(toolId).filter(function(j){return j.kind==='exercise'||j.kind==='fixit';});
+  return js.length?js[0].created:null;
+};
+// Like G.weakest, but for *writing* contexts: biases toward tools that
+// haven't been produced on in a while, not just toward the lowest mastery
+// pct — a tool practiced once long ago and never revisited should resurface
+// even if its raw pct isn't the single lowest.
+G.weakestStale = function(n){
+  var m=G.masteryAll();
+  var arr=CTG.TOOLS.filter(function(t){return m[t.id].level>0;}).map(function(t){
+    var days=G.lastPracticed(t.id)?(Date.now()-G.lastPracticed(t.id))/864e5:30;
+    return {t:t,m:m[t.id],score:m[t.id].pct-Math.min(30,days)};
+  });
+  arr.sort(function(a,b){return a.score-b.score;}); return arr.slice(0,n||5);
 };
 G.nextUnread = function(){return CTG.TOOLS.filter(function(t){return !G.S.read[t.id];})[0]||null;};
 

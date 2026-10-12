@@ -131,11 +131,26 @@ V.tool=function(root,args){
         h('section',{class:'card'},h('h3',{},'Example'),h('p',{},t.ex)),
         h('section',{class:'card ask'},h('h3',{},'Ask yourself'),h('p',{class:'lead'},t.ask)))));
     var done=!!G.S.read[id];
+    var checkBox=h('div',{});
+    // A single retrieval-practice question stands between "read" and
+    // "marked as read" (PRINCIPLES.md §2 audit): attempting recall, right
+    // or wrong, is what makes reading stick — a bare click proved nothing.
     var btn=h('button',{type:'button',class:'btn '+(done?'':'primary'),onclick:function(){
-      if(!G.S.read[id]){G.S.read[id]=Date.now();G.addActivity({xp:5,items:1,mins:2});G.toast('Lesson read. The editor stays outside for now. +5 XP','ok');G.save();}
-      G.go('#/tool/'+id+'/quiz');}},done?'Read. Go practise':'Mark as read and start practising',G.icon('arrow',16));
+      if(done){ G.go('#/tool/'+id+'/quiz'); return; }
+      btn.disabled=true;
+      var qs=G.byTool(CTG.QUIZ,id), check=G.pick(qs);
+      G.clear(checkBox);
+      checkBox.appendChild(h('section',{class:'card'},h('h3',{},'One quick check'),h('p',{class:'muted small'},'Before you move on — right or wrong, trying to recall it is what makes it stick.')));
+      var qbox=h('div',{}); checkBox.appendChild(qbox);
+      G.quizSession(qbox,{items:[check],onDone:function(){
+        G.S.read[id]=Date.now(); G.addActivity({xp:5,items:1,mins:2}); G.toast('Lesson read. The editor stays outside for now. +5 XP','ok'); G.save();
+        G.go('#/tool/'+id+'/quiz');
+      }});
+      checkBox.scrollIntoView({behavior:'smooth',block:'start'});
+    }},done?'Read. Go practise':'Mark as read and start practising',G.icon('arrow',16));
     var prev=CTG.TOOLS[idx-1], next=CTG.TOOLS[idx+1];
     body.appendChild(h('div',{class:'row between'},prev?h('a',{class:'btn ghost',href:'#/tool/'+prev.id},G.icon('back',16),prev.name):h('span'),btn,next?h('a',{class:'btn ghost',href:'#/tool/'+next.id},next.name,G.icon('arrow',16)):h('span')));
+    body.appendChild(checkBox);
     // mastery breakdown
     var P=m.parts, rows=[['Lesson',P.lesson],['Quiz',P.quiz],['Cards',P.cards],['Writing',P.ex],['Fix-it',P.fix]].filter(function(r){return r[1]!==undefined;});
     body.appendChild(h('section',{class:'card'},h('h3',{},'Mastery breakdown'),h('div',{class:'breakdown'},rows.map(function(r){return h('div',{class:'brow'},h('span',{},r[0]),G.bar(r[1]*100,ch.color),h('span',{class:'muted small'},Math.round(r[1]*100)+'%'));})),
@@ -257,7 +272,7 @@ V.write=function(root,args){
     var box=h('div',{class:'runbox'}); root.appendChild(box); G.writeSession(box,ex); return;
   }
   root.appendChild(head('Timed writing','Quantity first. Set a timer, silence the editor, then review with the rubric.',
-    h('button',{type:'button',class:'btn primary',onclick:function(){var w=G.weakest(6,false).map(function(x){return x.t.id;}); var pool=CTG.EXERCISES.filter(function(e){return w.indexOf(e.tool)>=0;}); G.go('#/write/'+G.pick(pool).id);}},G.icon('dice',16),'Surprise me (weak tools)')));
+    h('button',{type:'button',class:'btn primary',onclick:function(){var w=G.weakestStale(6).map(function(x){return x.t.id;}); var pool=CTG.EXERCISES.filter(function(e){return w.indexOf(e.tool)>=0;}); G.go('#/write/'+G.pick(pool).id);}},G.icon('dice',16),'Surprise me (weak tools)')));
   var q=h('input',{type:'search',placeholder:'Search exercises...','aria-label':'Search exercises'});
   var bookOnly=h('input',{type:'checkbox','aria-label':'Only exercises from the book'});
   var list=h('div',{});
@@ -297,7 +312,7 @@ V.fix=function(root,args){
 V.workout=function(root){
   root.appendChild(head('10-minute workout','Learn a little, recall a little, write a little.'));
   var next=G.nextUnread(); var steps=[]; var t0=Date.now(), xp0=G.S.stats.xp;
-  var weakStarted=G.weakest(1,true)[0]; var focus=null;
+  var weakStarted=G.weakestStale(1)[0]; var focus=null;
   var lessonTool=(next&&!G.S.read[next.id]&&(Object.keys(G.S.read).length<CTG.TOOLS.length))?next:null;
   if(lessonTool) focus=lessonTool.id; else if(weakStarted) focus=weakStarted.t.id; else focus=CTG.TOOLS[0].id;
   if(lessonTool) steps.push({type:'lesson',tool:lessonTool,label:'Lesson'});

@@ -166,7 +166,22 @@ G.writeSession = function(box,ex,opts){
   var pr=(draft&&Date.now()-draft.ts<12*36e5)?{text:draft.prompt,vals:[]}:G.fillTpl(ex); if(draft&&Date.now()-draft.ts<12*36e5)restored=true;
   var mins=opts.minutes||ex.minutes, total=mins*60, started=false, t0=0, elapsed=0, tick=null, ended=false, fields=[], ta=null;
   var noedit=ex.noedit||G.S.settings.noedit;
-  var promptEl=h('div',{class:'prompt',id:'wprompt'},pr.text||'Free choice: pick any topic you like.');
+  var ownIdea=false;
+  var promptEl=h('div',{class:'prompt',id:'wprompt'});
+  // Every bank prompt is generated; nothing routes a user to their own
+  // material, even though that's the book's own "comic vocabulary" ethos
+  // (PRINCIPLES.md §2 audit). renderPrompt() swaps between the generated
+  // text and an editable input bound straight to pr.text, so whichever one
+  // is showing is also what gets saved to the journal.
+  function renderPrompt(){
+    G.clear(promptEl);
+    if(ownIdea){
+      var inp=h('input',{type:'text',value:pr.text||'',placeholder:'Type your own idea or situation...','aria-label':'Your own prompt',oninput:function(){pr.text=this.value;}});
+      promptEl.appendChild(inp);
+      setTimeout(function(){inp.focus();},10);
+    } else promptEl.appendChild(document.createTextNode(pr.text||'Free choice: pick any topic you like.'));
+  }
+  renderPrompt();
   var timerEl=h('div',{class:'timer',role:'timer','aria-live':'off'},G.fmtTime(total));
   var tbar=G.bar(0,G.hue(ex.tool)); var countEl=h('div',{class:'count','aria-live':'polite'}); var banner=h('div',{class:'banner',hidden:true});
   var startBtn=h('button',{type:'button',class:'btn primary',onclick:function(){start();}},G.icon('clock',16),'Start timer');
@@ -219,10 +234,15 @@ G.writeSession = function(box,ex,opts){
   G.onLeave(function(){clearInterval(tick);});
   function newPrompt(){
     if(started&&counts()>0&&!confirm('New prompt? Your current text stays, but the prompt changes.')) return;
-    pr=G.fillTpl(ex); promptEl.textContent=pr.text; G.announce('New prompt: '+pr.text);
+    ownIdea=false; pr=G.fillTpl(ex); renderPrompt(); G.announce('New prompt: '+pr.text);
+  }
+  function useOwnIdea(){
+    if(started&&counts()>0&&!confirm('Switch to your own idea? Your current text stays, but the prompt changes.')) return;
+    ownIdea=true; pr={text:'',vals:[]}; renderPrompt();
   }
   var ctrl=h('div',{class:'wctrl'},
     ex.bank?h('button',{type:'button',class:'btn',onclick:newPrompt},G.icon('dice',16),'New prompt'):null,
+    ex.bank?h('button',{type:'button',class:'btn',onclick:useOwnIdea},G.icon('pen',16),'Use my own idea'):null,
     h('label',{class:'sel'},'Minutes ',h('select',{disabled:false,'aria-label':'Minutes',onchange:function(){if(started)return;total=+this.value*60;timerEl.textContent=G.fmtTime(total);mins=+this.value;}},
       [3,5,8,10,15,20].concat(ex.minutes&&[3,5,8,10,15,20].indexOf(ex.minutes)<0?[ex.minutes]:[]).sort(function(a,b){return a-b;}).map(function(m){return h('option',{value:m,selected:m===mins},m+' min');}))),
     h('label',{class:'chk'},h('input',{type:'checkbox',checked:noedit,onchange:function(){noedit=this.checked;G.toast(noedit?'No-edit mode on. The ferocious editor is locked out — backspace and delete won\'t work.':'No-edit mode off. The editor\'s back in the room.');}}),'No-edit mode'),

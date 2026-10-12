@@ -33,6 +33,18 @@ itself.
   `qualifies` flag, `G.streak()`/`G.bestStreak()` reading `a.prod`).
   When adding a new practice mode, give its completion point — not its
   per-item events — `qualifies:true`.
+- The exercise score is a recency-weighted average over the last 10
+  exercises per tool (geometric decay), not a flat average of the last 3
+  — don't collapse that back to a short flat window, it was specifically
+  changed so continued practice keeps moving the score instead of
+  freezing at 3 reps.
+- `G.weakestStale()` (not `G.weakest()`) is what picks the writing/fix-it
+  focus for the workout and the Write page's "Surprise me" — it biases
+  toward tools that haven't been *produced on* in a while (via
+  `G.lastPracticed()`), standing in for the spaced re-practice that
+  writing/fix-it don't otherwise get. `G.weakest()` itself (pure mastery
+  pct, no staleness) is still correct for display-only contexts like the
+  dashboard's "Needs attention" list — don't swap those.
 
 **Content (`js/content/*.js`)**
 - Every tool needs, eventually: 1 lesson, ≥3 quiz, ≥3 cards, ≥1 exercise,
@@ -47,6 +59,16 @@ itself.
   tools; split the bank or add a variant instead.
 - New quiz questions should lean toward application ("spot the weak
   one," "fix it") over pure definition recall.
+- "Mark as read" (the tool page's Learn tab) runs one random quiz
+  question from that tool before setting `G.S.read[id]` — a retrieval
+  attempt, not a self-report click. Keep it to exactly one question; it's
+  a speed bump, not a new gate. Any new "mark as understood" affordance
+  elsewhere should follow the same pattern rather than a bare checkbox.
+- The writing runner's prompt can be swapped for free text via "Use my
+  own idea" (`renderPrompt()`/`ownIdea` in `js/runners.js`), bound
+  straight to `pr.text` so it saves to the journal like any generated
+  prompt. Keep new prompt-related UI compatible with that path rather
+  than assuming `pr.text` is always bank-generated.
 
 **UX/UI**
 - Dashboard above the fold = greeting + one hero CTA + streak chip only

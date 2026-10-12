@@ -73,6 +73,24 @@ it or doesn't.
   of whether the user has done them). This is a content-completeness gate,
   not a user-effort gate — the existing pct math already handles user
   effort correctly.
+- **The exercise component must reward sustained practice, not just your
+  last 3 attempts.** Audited against "internalize the book's lessons"
+  (not just "pass the app's metrics"): a flat average of only the 3 most
+  recent exercises meant writing a 4th, 10th, or 20th exercise on a tool
+  could never move its score beyond what 3 data points say — no credit
+  for volume or consistency past that. Fixed with a recency-weighted
+  average over the last 10 exercises (geometric decay, most recent
+  weighted highest) — full weight still unlocks at 3 exercises so early
+  progress isn't slower to register, but the score keeps responding to
+  continued practice instead of freezing.
+- **Writing and fix-it get no spaced re-practice of their own** — only
+  quiz/cards have real SRS scheduling. `G.weakestStale()` is a lightweight
+  stand-in: it biases tool selection (the workout's writing-sprint focus,
+  "Surprise me" on the Write page) toward tools that haven't been
+  *produced on* in a while, not just toward the lowest raw mastery pct,
+  reusing the journal's own timestamps rather than a new scheduling
+  system. This is deliberately cheap, not a full SRS for production —
+  revisit if it proves insufficient.
 - Streaks/XP stay, but are secondary chips (top bar, Progress page), never
   the dominant element of the dashboard hero (see §4).
 - **Streak integrity:** a day only counts toward the streak if it includes
@@ -83,7 +101,7 @@ it or doesn't.
 ## 3. Content authoring rules
 
 - Every tool must eventually have: 1 lesson, ≥3 quiz, ≥3 cards, ≥1 exercise,
-  **≥1 fix-it** (currently 16/65 tools have zero fix-it — backlog item).
+  **≥1 fix-it** (all 65 currently do).
 - Lessons should contain at least one line that demonstrates the tool's
   comic technique, not just describes it.
 - Prompt banks: a given bank should not be shared across more than 4
@@ -92,6 +110,20 @@ it or doesn't.
   variants rather than reusing the same pool verbatim.
 - Quiz questions should be weighted toward application ("spot the weak
   one", "fix it") over pure definition recall where possible.
+- **"Mark as read" requires one retrieval attempt, not just a click.**
+  A bare self-report checkbox proves nothing was actually read. The tool
+  page's Learn tab now runs one random quiz question from that tool's own
+  bank before setting `G.S.read[id]` — right or wrong doesn't matter
+  (the testing effect holds either way), only that recall was attempted.
+  Keep this to exactly one question; it's a speed bump against mindless
+  clicking, not a new gate to grind.
+- **Writing exercises should let the user substitute their own material.**
+  Every bank-based exercise generates its prompt for you; nothing routes
+  back to the book's own "comic vocabulary" ethos of working from your
+  own life. The writing runner's "Use my own idea" option (next to "New
+  prompt") swaps the generated prompt for a free-text field bound to the
+  same `pr.text` the session already saves — keep any future prompt
+  UI changes compatible with that substitution path.
 
 ## 4. UX/UI rules
 

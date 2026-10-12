@@ -23,22 +23,24 @@ itself.
   55%, recall 40%, lesson 5% gate). Don't shift weight back toward
   quiz/cards without updating `PRINCIPLES.md` §2 first.
 - A tool whose content (`CTG.EXERCISES`/`CTG.FIX` filtered by tool id)
-  has zero exercises or zero fix-it entries must not display as
-  "Mastered" even if raw pct hits 92%+ — cap the shown level at "Sharp."
-  This is a content-completeness gate, independent of user effort.
-- Streak (`G.streak()`/`G.addActivity`) should only count a day if it
-  includes a production item (exercise or fix-it save) or a *completed*
-  quiz/card session — not a single answered question/card. Implementing
-  this needs a way to distinguish "session completed" from "item
-  answered" in the activity log; don't just lower the bar incidentally
-  while touching this code.
+  has zero exercises or zero fix-it entries displays capped at "Sharp,"
+  never "Mastered," however high raw pct runs (`G.mastery()` already
+  enforces this — don't bypass it for a new content type without adding
+  the same gate).
+- A streak day requires a production item (exercise/fix-it save, lab
+  project) or a *completed* quiz/card/workout session — never a single
+  answered question or rated card on its own (`G.addActivity`'s
+  `qualifies` flag, `G.streak()`/`G.bestStreak()` reading `a.prod`).
+  When adding a new practice mode, give its completion point — not its
+  per-item events — `qualifies:true`.
 
 **Content (`js/content/*.js`)**
 - Every tool needs, eventually: 1 lesson, ≥3 quiz, ≥3 cards, ≥1 exercise,
-  ≥1 fix-it. Currently 16/65 tools have zero fix-it — when adding fix-it
-  content, prioritize those tools first (check with
-  `grep -oE '^X\("[a-z_0-9]+"' js/content/fix-*.js | sed 's/^X("//' | sort -u`
-  against the tool list to find gaps).
+  ≥1 fix-it. All 65 currently do — when adding a new tool, add all five
+  before merging, or it silently caps at "Sharp" (see above) and its
+  Fix-it tab shows an empty state instead of content. Check coverage
+  with `grep -oE '^X\("[a-z_0-9]+"' js/content/fix-*.js | sed 's/^X("//' | sort -u`
+  (and the equivalent for `E(`/`Q(`/`C(`) against the tool list.
 - A lesson should contain at least one line that demonstrates the
   technique, not just describes it.
 - Don't add a new exercise to a prompt bank already shared by 4+ unrelated
@@ -47,34 +49,53 @@ itself.
   one," "fix it") over pure definition recall.
 
 **UX/UI**
-- Dashboard above the fold = greeting + one hero CTA + streak chip only.
-  Stats row, week strip, weakest-tools card, and the quick-launch tile
-  grid belong below the fold or on Progress/Practice — don't add more
-  surfaces competing with the hero CTA.
+- Dashboard above the fold = greeting + one hero CTA + streak chip only
+  (the streak chip lives in the topbar, not the dashboard body — don't
+  add a second one there). Stats row, week strip, weakest-tools card
+  live below a `.sec` break; there's no quick-launch tile grid on the
+  dashboard — that's the Practice hub's job (`#/practice`), linked once.
+  Don't add new surfaces above the fold that compete with the hero CTA,
+  including a reminder nudge — see Reminders below for how that one
+  avoids it.
 - `--accent` means "this is content you're producing or being prompted
   with" (promptbox, the "Ask yourself" card border, saved-writing
-  border). Don't use it for action buttons — `js/runners.js:169` and
-  `:292` ("Finish and review," "Compare with a model") should move to
-  `.btn.primary` or a dedicated style, not stay on `.btn.accent`, as this
-  gets cleaned up.
-- Prefer consolidating `.chip`/`.tag`/`.cnt`/`.lv*` toward one badge
-  component (neutral/positive/brand) rather than adding another one-off
-  variant.
+  border) — never an action button's color. If a new button is tempted
+  to reach for `.btn.accent`, it shouldn't exist; use `.btn.primary` or
+  a new, deliberately-named style instead.
+- Badges are one component: `.badge` base + `.badge-positive` /
+  `.badge-brand` / `.badge-streak` / `.badge-lv0`–`.badge-lv5` /
+  `.badge-sm` / `.badge-label` modifiers (`css/style.css`, "Badges"
+  section). Don't reintroduce a one-off pill/tag style — add a modifier
+  to this family, and only add a new one if it's a genuinely distinct
+  semantic state, not a visual tweak.
 - Any string the app itself writes to the user (toast, empty state,
   achievement name, button label) should read like someone who's read
   the book wrote it, not generic SaaS copy. Don't write "X marked as
   done. +N XP" — tie the copy to what just happened in the book's terms.
+  Plain CRUD confirmations (Saved./Deleted./Copied.) are a deliberate
+  exception — predictability matters more than personality there.
 
-**Reminders / habit (new feature area)**
+**Reminders / habit (`G.reminderState()` in `js/core.js`, wired in
+`js/app.js` and the dashboard hero in `js/views.js`)**
 - No push server, no backend — stays client-side.
-- Build the in-app catch-up nudge first (shows on boot if yesterday was
-  missed or today's practice hasn't happened by a configured time,
-  names what's due). This works on every platform and needs no
-  permission prompt — ship this before anything background-based.
-- A background/closed-app notification tier is best-effort only
-  (Periodic Background Sync, Chromium/Android/desktop) and must be
-  opt-in via Settings, never auto-requested on load, and must be labeled
-  in-app as unsupported on iOS/Safari rather than silently failing there.
+- Tier 1 (in-app catch-up nudge) is live: it folds into the dashboard
+  hero's existing single CTA rather than a second banner (see the UX
+  rule above), plus a one-off boot-time toast when the session resumes
+  on a non-dashboard route, so it still surfaces without a second
+  competing surface. `js/app.js`'s `render()` is the single place that
+  tracks what reminder state is currently shown (`lastRemState`) — don't
+  read or set that anywhere else, or a navigation path that bypasses
+  `render()` will silently go stale (this happened once; the fix was
+  moving the tracking into `render()` itself).
+- Tier 2 (background/closed-app notification) is live, best-effort,
+  Chromium-only, opt-in via Settings, never auto-requested on load, and
+  the toggle only appears when `G.bgReminderSupported()` resolves true —
+  otherwise Settings shows the iOS/Safari caveat instead of silently
+  doing nothing. The service worker (`sw.js`'s `periodicsync` handler)
+  can't read localStorage, so it reads a single IndexedDB flag
+  (`G.markQualifyingToday()`, written on every qualifying activity) to
+  decide whether to stay quiet on a day already covered — don't swap
+  that for a check that assumes the SW can see `G.S` directly, it can't.
 
 ## Non-goals (don't scope these in without a deliberate decision)
 

@@ -41,6 +41,13 @@ function render(){
   var hd=G.$('#app h1'); if(hd){hd.setAttribute('tabindex','-1');}
   root.classList.remove('view-in'); void root.offsetWidth; root.classList.add('view-in');
   window.scrollTo(0,0);
+  // Single source of truth for what reminder state is currently on screen,
+  // regardless of how we got here (hashchange, boot, or a stale-check's own
+  // render() call) — see the reminder-staleness block below. Anywhere else
+  // that just compared against a value set only by boot()/checkReminderStale()
+  // would drift out of sync the moment the user navigated to the dashboard
+  // by a plain link instead of one of those two paths.
+  lastRemState=(p.name===''?G.reminderState():null);
 }
 G.rerender=render;
 function setTbh(){var t=G.$('.topbar'); if(t) document.documentElement.style.setProperty('--tbh',t.offsetHeight+'px');}
@@ -126,11 +133,37 @@ document.addEventListener('keydown',function(e){
 window.addEventListener('hashchange',render);
 if(window.matchMedia) try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',G.applyTheme);}catch(e){}
 
+/* ---------- reminder staleness (code-review follow-up, see PRINCIPLES.md §5) ----------
+   G.reminderState() is only read where V.dashboard renders, so a session
+   that stays open past the configured reminder time, or that resumes on
+   a route other than the dashboard, would otherwise never pick up a
+   'missed'/'due' nudge without the user manually navigating home. Two
+   lightweight fixes, both acting only on an actual state change so they
+   never cause a surprise re-render or scroll jump: */
+var lastRemState=null;
+function onDashboard(){return parse().name==='';}
+function checkReminderStale(){
+  if(!onDashboard()) return; // dashboard owns re-rendering itself on hashchange
+  var cur=G.reminderState();
+  if(cur!==lastRemState){ lastRemState=cur; render(); }
+}
+document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') checkReminderStale(); });
+setInterval(checkReminderStale,10*60*1000);
+
 /* ---------- boot ---------- */
 function boot(){
   G.load(); buildShell(); G.applyTheme();
   if(G.saveError) G.toast('Couldn\'t save your work here. Back it up now (Settings → Full backup) before you lose it.','bad');
   render(); setTbh(); registerSW();
+  // render() just set lastRemState for us. If this session resumes on a
+  // route other than the dashboard, the hero's inline nudge never renders
+  // this load — surface it as a one-off toast instead so Tier 1 still
+  // shows "on boot" regardless of starting route.
+  if(!onDashboard()){
+    var rs=G.reminderState();
+    if(rs==='missed') G.toast('Yesterday slipped — pick it back up today. Open Home to start.','ok');
+    else if(rs==='due') G.toast('Your 10 minutes are still waiting today. Open Home to start.','ok');
+  }
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();

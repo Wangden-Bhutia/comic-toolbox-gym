@@ -20,6 +20,13 @@ function chapterTools(ch){return G.toolsOfChapter(+ch).map(function(t){return t.
 V.dashboard=function(root){
   var st=G.streak(), lv=G.level(), ov=G.overall(), dueC=G.dueCards().length, dueQ=G.dueQuiz().length;
   var todayAct=G.S.activity[G.today()]||{mins:0,xp:0,items:0};
+  // Deliberately distinct from G.todayDone() (used inside G.reminderState()):
+  // doneToday is stricter, true only once the bundled 10-min /workout flow
+  // is finished, and only governs the hero's "Workout complete" congrats
+  // copy below. G.reminderState() independently checks G.todayDone() (any
+  // qualifying activity) to decide whether to suppress the nudge, so e.g.
+  // a quiz+write session outside the bundled workout still correctly
+  // silences the "due" nudge even though doneToday stays false.
   var doneToday=!!G.S.workouts[G.today()];
   var nm=G.S.settings.name?', '+G.S.settings.name:'';
   var next=G.nextUnread(); var weak=G.weakest(5,true);

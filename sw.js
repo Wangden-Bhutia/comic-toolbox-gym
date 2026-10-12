@@ -1,5 +1,5 @@
 /* Comic Toolbox Gym service worker. Generated asset list: run `node tools/build-sw.js` after adding files. */
-const VERSION = 'ctg-7380ac86ab';
+const VERSION = 'ctg-b420cdd50b';
 const ASSETS = [
   "./",
   ".nojekyll",

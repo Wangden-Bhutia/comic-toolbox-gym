@@ -8,7 +8,7 @@ V.lab=function(root,args){
   root.appendChild(G.head('Labs','Guided builders that follow the book\'s methods, step by step. Finished projects are saved to your journal.'));
   root.appendChild(h('div',{class:'tiles big'},CTG.BUILDERS.map(function(b){
     var n=projects().filter(function(p){return p.meta&&p.meta.builder===b.id;}).length;
-    return h('a',{class:'tile card',href:'#/lab/'+b.id},h('div',{class:'ti'},G.icon(b.icon,24)),h('b',{},b.name),h('span',{class:'muted small'},b.desc),h('span',{class:'chip'},n+' saved · '+b.steps.length+' steps'));
+    return h('a',{class:'tile card',href:'#/lab/'+b.id},h('div',{class:'ti'},G.icon(b.icon,24)),h('b',{},b.name),h('span',{class:'muted small'},b.desc),h('span',{class:'badge'},n+' saved · '+b.steps.length+' steps'));
   })));
   var ps=projects();
   root.appendChild(h('h3',{class:'sec'},'Saved projects'));

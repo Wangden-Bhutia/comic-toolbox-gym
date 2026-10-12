@@ -21,7 +21,7 @@ function buildShell(){
     h('ul',{},NAV.map(function(n){return h('li',{class:n[3]||''},h('a',{href:'#/'+n[0],dataset:{r:n[0]}},G.icon(n[2],20),h('span',{},n[1])));})),
     h('a',{class:'btn primary wo',href:'#/workout'},G.icon('bolt',16),'10-min workout'));
   var top=h('header',{class:'topbar'},h('a',{class:'brand sm',href:'#/'},h('span',{class:'logo','aria-hidden':'true'},'CT'),'Comic Toolbox'),
-    h('div',{class:'tb-right'},h('a',{class:'chip streak',id:'streak-chip',href:'#/progress','aria-label':'Streak'},G.icon('flame',14),h('span',{id:'streak-n'},'0')),
+    h('div',{class:'tb-right'},h('a',{class:'badge badge-streak',id:'streak-chip',href:'#/progress','aria-label':'Streak'},G.icon('flame',14),h('span',{id:'streak-n'},'0')),
       h('a',{class:'iconbtn hideSm',href:'#/progress','aria-label':'Progress'},G.icon('chart',18)),
       h('a',{class:'iconbtn hideSm',href:'#/settings','aria-label':'Settings'},G.icon('gear',18)),
       h('button',{type:'button',class:'iconbtn',id:'theme-btn',onclick:function(){var dark=document.documentElement.getAttribute('data-theme')==='dark'||(!document.documentElement.getAttribute('data-theme')&&window.matchMedia('(prefers-color-scheme: dark)').matches);G.S.settings.theme=dark?'light':'dark';G.save();G.applyTheme();}},G.icon('moon',18)),

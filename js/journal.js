@@ -45,7 +45,7 @@ G.journalCard=function(j,o){
   function paint(){
     G.clear(card); G.clear(body);
     var star=h('button',{type:'button',class:'iconbtn'+(j.star?' on':''),'aria-pressed':j.star?'true':'false','aria-label':'Star entry',title:'Star',onclick:function(){j.star=!j.star;G.save();paint();}},G.icon('star',16));
-    card.appendChild(h('div',{class:'jhead'},h('div',{},h('div',{class:'row'},G.chip(KIND_LABEL[j.kind]||j.kind,tool?G.hue(j.tool):undefined,'kind'),tool?G.toolChip(j.tool):null,h('span',{class:'muted small'},G.fmtDate(j.created))),h('h3',{},j.title||'Untitled')),star));
+    card.appendChild(h('div',{class:'jhead'},h('div',{},h('div',{class:'row'},G.chip(KIND_LABEL[j.kind]||j.kind,tool?G.hue(j.tool):undefined),tool?G.toolChip(j.tool):null,h('span',{class:'muted small'},G.fmtDate(j.created))),h('h3',{},j.title||'Untitled')),star));
     if(j.prompt&&j.kind!=='project') body.appendChild(h('p',{class:'jprompt'},h('b',{},j.kind==='fixit'?'Flat version: ':'Prompt: '),j.prompt));
     body.appendChild(h('pre',{class:'written'+(open?'':' clamp')},j.content||''));
     var m=j.meta||{}; var bits=[];
@@ -126,7 +126,7 @@ V.vocab=function(root){
   }
   inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();add();}});
   function paint(){
-    var n=todays().length; G.clear(prog); prog.appendChild(h('div',{class:'row'},h('b',{},n+' / '+TARGET+' today'),n>=TARGET?G.chip('Target hit','','ok'):null)); prog.appendChild(G.bar(100*Math.min(1,n/TARGET),150));
+    var n=todays().length; G.clear(prog); prog.appendChild(h('div',{class:'row'},h('b',{},n+' / '+TARGET+' today'),n>=TARGET?G.chip('Target hit','','badge-positive'):null)); prog.appendChild(G.bar(100*Math.min(1,n/TARGET),150));
     G.clear(list); var all=G.S.journal.filter(function(j){return j.kind==='vocab';});
     if(!all.length){list.appendChild(h('div',{class:'empty'},'Nothing yet. Write the first thing that makes you smile.'));return;}
     var cur=''; all.slice(0,200).forEach(function(j){var d=G.dateKey(new Date(j.created)); if(d!==cur){cur=d;list.appendChild(h('h4',{},d===G.today()?'Today':d));}

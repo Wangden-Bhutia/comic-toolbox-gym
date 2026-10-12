@@ -73,7 +73,7 @@ V.dashboard=function(root){
 V.map=function(root){
   var m=G.masteryAll();
   root.appendChild(head('Skill map','Every tool in the book, by chapter. Rings fill as you learn, quiz, review, write and fix.',h('a',{class:'btn primary',href:'#/workout'},G.icon('bolt',16),'Workout')));
-  root.appendChild(h('div',{class:'legend'},G.LEVELS.map(function(l,i){return h('span',{class:'lv lv'+i},l);})));
+  root.appendChild(h('div',{class:'legend'},G.LEVELS.map(function(l,i){return h('span',{class:'badge badge-lv'+i},l);})));
   CTG.CHAPTERS.forEach(function(c){
     var tools=G.toolsOfChapter(c.id);
     var avg=tools.length?Math.round(tools.reduce(function(a,t){return a+m[t.id].pct;},0)/tools.length):0;
@@ -100,11 +100,11 @@ V.tool=function(root,args){
   root.appendChild(h('div',{class:'toolhead card'},
     G.ring(m.pct,ch.color,72,m.pct+'%'),
     h('div',{class:'th'},h('div',{class:'eyebrow'},(t.ch===0?'Introduction':'Chapter '+t.ch)+' · '+ch.title),h('h1',{},t.name),h('p',{class:'sub'},t.tag),
-      h('div',{class:'row'},G.chip(G.LEVELS[m.level],ch.color,'lvchip'),G.chip(G.S.read[id]?'Lesson read':'Lesson not read',undefined,G.S.read[id]?'ok':'')))));
+      h('div',{class:'row'},G.chip(G.LEVELS[m.level],ch.color,'badge-brand'),G.chip(G.S.read[id]?'Lesson read':'Lesson not read',undefined,G.S.read[id]?'badge-positive':'')))));
   var tabs=[['learn','Learn'],['quiz','Quiz'],['cards','Cards'],['write','Write'],['fix','Fix-it'],['journal','Journal']];
   var nav=h('div',{class:'tabs',role:'tablist','aria-label':'Tool sections'},tabs.map(function(x){
     var qn=x[0]==='quiz'?G.byTool(CTG.QUIZ,id).length:(x[0]==='cards'?G.byTool(CTG.CARDS,id).length:(x[0]==='write'?CTG.EXERCISES.filter(function(e){return e.tool===id;}).length:(x[0]==='fix'?G.byTool(CTG.FIX,id).length:(x[0]==='journal'?G.journalOf(id).length:null))));
-    return h('a',{role:'tab',class:'tab'+(x[0]===tab?' on':''),'aria-selected':x[0]===tab?'true':'false',href:'#/tool/'+id+'/'+x[0]},x[1],qn!==null?h('span',{class:'cnt'},String(qn)):null);}));
+    return h('a',{role:'tab',class:'tab'+(x[0]===tab?' on':''),'aria-selected':x[0]===tab?'true':'false',href:'#/tool/'+id+'/'+x[0]},x[1],qn!==null?h('span',{class:'badge badge-sm'},String(qn)):null);}));
   root.appendChild(nav);
   var body=h('div',{class:'tabbody',role:'tabpanel'}); root.appendChild(body);
   ({learn:learn,quiz:quizTab,cards:cardsTab,write:writeTab,fix:fixTab,journal:journalTab}[tab]||learn)();
@@ -164,7 +164,7 @@ V.tool=function(root,args){
   }
 };
 function exCard(e,onstart){
-  return h('div',{class:'card ex'},h('div',{},h('div',{class:'row'},h('b',{},e.title),e.book?G.chip('From the book',undefined,'ok'):null,G.chip(e.minutes+' min'),G.chip(e.target+' '+(e.mode==='list'?'ideas':(e.mode==='rows'?'fields':'words')))),h('p',{class:'muted'},e.instr)),
+  return h('div',{class:'card ex'},h('div',{},h('div',{class:'row'},h('b',{},e.title),e.book?G.chip('From the book',undefined,'badge-positive'):null,G.chip(e.minutes+' min'),G.chip(e.target+' '+(e.mode==='list'?'ideas':(e.mode==='rows'?'fields':'words')))),h('p',{class:'muted'},e.instr)),
     h('button',{type:'button',class:'btn primary',onclick:onstart},G.icon('pen',16),'Start'));
 }
 G.exCard=exCard;
@@ -275,7 +275,7 @@ V.fix=function(root,args){
   CTG.CHAPTERS.forEach(function(c){
     var fs=CTG.FIX.filter(function(f){return G.toolMap[f.tool].ch===c.id;}); if(!fs.length)return;
     root.appendChild(h('section',{class:'chapter',style:'--hue:'+c.color},h('h2',{},(c.id?'Ch '+c.id+': ':'')+c.title),
-      h('div',{class:'exlist'},fs.map(function(f){return h('div',{class:'card ex'},h('div',{},h('div',{class:'row'},h('b',{},f.task),done[f.id]?G.chip('Done',undefined,'ok'):null),h('p',{class:'muted'},'"'+f.flat+'"'),G.toolChip(f.tool)),h('a',{class:'btn primary',href:'#/fix/'+f.id},'Try it'));}))));
+      h('div',{class:'exlist'},fs.map(function(f){return h('div',{class:'card ex'},h('div',{},h('div',{class:'row'},h('b',{},f.task),done[f.id]?G.chip('Done',undefined,'badge-positive'):null),h('p',{class:'muted'},'"'+f.flat+'"'),G.toolChip(f.tool)),h('a',{class:'btn primary',href:'#/fix/'+f.id},'Try it'));}))));
   });
 };
 
@@ -353,7 +353,7 @@ V.progress=function(root){
   // weakest + strongest
   var all=CTG.TOOLS.map(function(t){return {t:t,m:m[t.id]};}).sort(function(a,b){return a.m.pct-b.m.pct;});
   var lvc=[0,0,0,0,0,0]; all.forEach(function(x){lvc[x.m.level]++;});
-  root.appendChild(h('section',{class:'card'},h('h3',{},'Tools by level'),h('div',{class:'legend'},G.LEVELS.map(function(l,i){return h('span',{class:'lv lv'+i},l+': '+lvc[i]);}))));
+  root.appendChild(h('section',{class:'card'},h('h3',{},'Tools by level'),h('div',{class:'legend'},G.LEVELS.map(function(l,i){return h('span',{class:'badge badge-lv'+i},l+': '+lvc[i]);}))));
   var acc={}; S.quizLog.forEach(function(q){var a=acc[q.tool]||(acc[q.tool]={n:0,ok:0}); a.n++; if(q.ok)a.ok++;});
   var shaky=Object.keys(acc).filter(function(k){return acc[k].n>=3;}).sort(function(a,b){return acc[a].ok/acc[a].n-acc[b].ok/acc[b].n;}).slice(0,5);
   root.appendChild(h('div',{class:'cols'},

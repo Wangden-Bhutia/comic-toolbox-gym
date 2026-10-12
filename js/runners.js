@@ -5,8 +5,10 @@ G.onLeave = function(fn){G.cleanups.push(fn);};
 G.runCleanups = function(){var c=G.cleanups.splice(0);c.forEach(function(f){try{f();}catch(e){}});};
 
 /* small UI parts */
-G.chip = function(text,hue,cls){var c=h('span',{class:'chip '+(cls||'')},text); if(hue!==undefined) c.style.setProperty('--hue',hue); return c;};
-G.toolChip = function(toolId){var t=G.toolMap[toolId]; if(!t) return null; return h('a',{class:'chip toolchip',href:'#/tool/'+toolId,style:'--hue:'+G.hue(toolId)},t.name);};
+// cls is a .badge modifier (badge-positive, badge-brand, badge-streak,
+// badge-lv0..5) or omitted for the plain neutral badge.
+G.chip = function(text,hue,cls){var c=h('span',{class:'badge '+(cls||'')},text); if(hue!==undefined) c.style.setProperty('--hue',hue); return c;};
+G.toolChip = function(toolId){var t=G.toolMap[toolId]; if(!t) return null; return h('a',{class:'badge toolchip',href:'#/tool/'+toolId,style:'--hue:'+G.hue(toolId)},t.name);};
 G.bar = function(pct,hue){var b=h('div',{class:'bar',role:'progressbar','aria-valuemin':0,'aria-valuemax':100,'aria-valuenow':Math.round(pct)},h('i',{style:'width:'+G.clamp(pct,0,100)+'%'})); if(hue!==undefined)b.style.setProperty('--hue',hue); return b;};
 G.ring = function(pct,hue,size,label){
   var ns='http://www.w3.org/2000/svg',r=18,c=2*Math.PI*r; var s=document.createElementNS(ns,'svg');
@@ -56,7 +58,7 @@ G.quizSession = function(box,opts){
       var b=h('button',{type:'button',class:'choice',onclick:function(){answer(o,b);}},h('span',{class:'k'},String(i+1)),h('span',{class:'t'},o.t)); b.dataset.ok=o.ok?'1':'0'; choices.push(b); list.appendChild(b);
     });
     box.appendChild(h('div',{class:'qwrap'},
-      h('div',{class:'qhead'},h('span',{class:'muted'},firstSeen[cur.id]?'Retry (missed earlier)':('Question '+(Math.min(idx+1,total))+' of '+total)),G.chip(KINDS[cur.kind]||'Question',G.hue(cur.tool),'kind')),
+      h('div',{class:'qhead'},h('span',{class:'muted'},firstSeen[cur.id]?'Retry (missed earlier)':('Question '+(Math.min(idx+1,total))+' of '+total)),G.chip(KINDS[cur.kind]||'Question',G.hue(cur.tool))),
       G.bar(100*idx/total,G.hue(cur.tool)),
       h('h2',{class:'qtext'},cur.q),
       list, fb));
@@ -123,7 +125,7 @@ G.cardSession = function(box,opts){
       h('div',{class:'face front'},h('div',{class:'lab'},tool?tool.name:''),h('div',{class:'ftext'},cur.f)),
       flipped?h('div',{class:'face ans'},h('div',{class:'lab'},'Answer'),h('div',{class:'ftext'},cur.b)):null);
     box.appendChild(h('div',{class:'qwrap'},
-      h('div',{class:'qhead'},h('span',{class:'muted'},done+' of '+total+' done'),G.chip(G.S.srs['c:'+cur.id]?'Review':'New',G.hue(cur.tool),'kind')),
+      h('div',{class:'qhead'},h('span',{class:'muted'},done+' of '+total+' done'),G.chip(G.S.srs['c:'+cur.id]?'Review':'New',G.hue(cur.tool))),
       G.bar(100*done/total,G.hue(cur.tool)), card,
       flipped?h('div',{class:'rates','aria-label':'How well did you recall it?'},
         [['Again','No idea',0],['Hard','Slow',1],['Good','Got it',2],['Easy','Instant',3]].map(function(r){
@@ -251,7 +253,7 @@ G.writeSession = function(box,ex,opts){
       h('pre',{class:'written'},content||'(nothing written)'),
       h('h3',{},'Rate yourself honestly'),
       h('p',{class:'muted small'},'Be fair, not harsh. A "Partly" is a good answer. This is your own private rubric from the tool.'),
-      h('ol',{class:'rubric'},rub.map(function(r,i){return h('li',{},h('div',{class:'rt'},r.t,r.tool?null:h('span',{class:'tag'},'process')),raters[i].el);})),
+      h('ol',{class:'rubric'},rub.map(function(r,i){return h('li',{},h('div',{class:'rt'},r.t,r.tool?null:h('span',{class:'badge-label'},'process')),raters[i].el);})),
       scoreEl,
       h('label',{class:'field'},h('span',{},'Take the win: one thing you did well'),win),
       h('div',{class:'row'},

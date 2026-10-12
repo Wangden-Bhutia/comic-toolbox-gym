@@ -66,7 +66,7 @@ var deferred=null;
 function standalone(){return (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true;}
 function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
 window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferred=e;var c=G.$('#install-slot');if(c&&!c.firstChild){var n=G.installCard();if(n)c.appendChild(n);}});
-window.addEventListener('appinstalled',function(){deferred=null;G.S.settings.installed=true;G.save();var c=G.$('#install-slot');if(c)G.clear(c);G.toast('Installed. Open it from your home screen.','ok');});
+window.addEventListener('appinstalled',function(){deferred=null;G.S.settings.installed=true;G.save();var c=G.$('#install-slot');if(c)G.clear(c);G.toast('Installed. It\'s on your home screen — go do your ten minutes.','ok');});
 // forced=true: show even if previously dismissed (More page)
 G.installCard=function(forced){
   if(standalone()||location.protocol==='file:') return null;
@@ -91,7 +91,7 @@ function registerSW(){
   window.addEventListener('load',function(){
     navigator.serviceWorker.register('sw.js').then(function(reg){
       reg.addEventListener('updatefound',function(){var nw=reg.installing; if(!nw)return;
-        nw.addEventListener('statechange',function(){ if(nw.state==='installed'&&navigator.serviceWorker.controller){G.toast('Update downloaded. Reload to get the latest version.','ok');} });});
+        nw.addEventListener('statechange',function(){ if(nw.state==='installed'&&navigator.serviceWorker.controller){G.toast('New version downloaded. Reload whenever you\'re ready for it.','ok');} });});
     }).catch(function(e){console.info('Service worker not registered:',e&&e.message);});
   });
 }
@@ -129,7 +129,7 @@ if(window.matchMedia) try{window.matchMedia('(prefers-color-scheme: dark)').addE
 /* ---------- boot ---------- */
 function boot(){
   G.load(); buildShell(); G.applyTheme();
-  if(G.saveError) G.toast('Warning: could not save to localStorage. Export backups regularly.','bad');
+  if(G.saveError) G.toast('Couldn\'t save your work here. Back it up now (Settings → Full backup) before you lose it.','bad');
   render(); setTbh(); registerSW();
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();

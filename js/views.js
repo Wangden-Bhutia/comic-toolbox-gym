@@ -93,7 +93,7 @@ V.map=function(root){
 /* ---------- TOOL PAGE ---------- */
 V.tool=function(root,args){
   var id=args[0], tab=args[1]||'learn', t=G.toolMap[id];
-  if(!t){root.appendChild(empty('Tool not found.'));return;}
+  if(!t){root.appendChild(empty('Can\'t find that tool — try the skill map.'));return;}
   var ch=G.chMap[t.ch], m=G.mastery(id), idx=CTG.TOOLS.indexOf(t);
   root.style.setProperty('--hue',ch.color);
   root.appendChild(h('a',{class:'back',href:'#/map'},G.icon('back',16),'Skill map'));
@@ -118,7 +118,7 @@ V.tool=function(root,args){
         h('section',{class:'card ask'},h('h3',{},'Ask yourself'),h('p',{class:'lead'},t.ask)))));
     var done=!!G.S.read[id];
     var btn=h('button',{type:'button',class:'btn '+(done?'':'primary'),onclick:function(){
-      if(!G.S.read[id]){G.S.read[id]=Date.now();G.addActivity({xp:5,items:1,mins:2});G.toast('Lesson marked as read. +5 XP','ok');G.save();}
+      if(!G.S.read[id]){G.S.read[id]=Date.now();G.addActivity({xp:5,items:1,mins:2});G.toast('Lesson read. The editor stays outside for now. +5 XP','ok');G.save();}
       G.go('#/tool/'+id+'/quiz');}},done?'Read. Go practise':'Mark as read and start practising',G.icon('arrow',16));
     var prev=CTG.TOOLS[idx-1], next=CTG.TOOLS[idx+1];
     body.appendChild(h('div',{class:'row between'},prev?h('a',{class:'btn ghost',href:'#/tool/'+prev.id},G.icon('back',16),prev.name):h('span'),btn,next?h('a',{class:'btn ghost',href:'#/tool/'+next.id},next.name,G.icon('arrow',16)):h('span')));
@@ -153,13 +153,13 @@ V.tool=function(root,args){
     body.appendChild(list); body.appendChild(runBox);
   }
   function fixTab(){
-    var fs=G.byTool(CTG.FIX,id); if(!fs.length){body.appendChild(empty('No fix-it challenge for this tool yet. Try the Write tab or the Premise Lab.'));return;}
+    var fs=G.byTool(CTG.FIX,id); if(!fs.length){body.appendChild(empty('This tool doesn\'t have a fix-it drill yet — write one of your own in the Write tab instead.'));return;}
     var runBox=h('div',{class:'runbox'});
     body.appendChild(h('div',{class:'exlist'},fs.map(function(f){return h('div',{class:'card ex'},h('div',{},h('b',{},f.task),h('p',{class:'muted'},'"'+f.flat+'"')),h('button',{type:'button',class:'btn primary',onclick:function(){G.clear(runBox);G.fixSession(runBox,f,{again:function(){G.rerender();}});runBox.scrollIntoView({behavior:'smooth'});}},'Try it'));})));
     body.appendChild(runBox);
   }
   function journalTab(){
-    var js=G.journalOf(id); if(!js.length){body.appendChild(empty('Nothing saved for this tool yet. Complete a writing exercise and it appears here.'));return;}
+    var js=G.journalOf(id); if(!js.length){body.appendChild(empty('Nothing written for this tool yet. Finish a writing exercise and it shows up here.'));return;}
     body.appendChild(h('div',{class:'jlist'},js.map(function(j){return G.journalCard(j,{compact:true});})));
   }
 };
@@ -225,7 +225,7 @@ V.cards=function(root){
     else if(scope.value==='chapter'){var ids=chapterTools(sub.value); items=CTG.CARDS.filter(function(c){return ids.indexOf(c.tool)>=0;});}
     else if(scope.value==='weak') items=CTG.CARDS.filter(function(c){var e=G.S.srs['c:'+c.id];return e&&(e.lapses>0||e.ease<2.3);});
     else items=CTG.CARDS;
-    if(!items.length){G.toast('No cards in that deck right now. Try another deck.');return;}
+    if(!items.length){G.toast('Nothing due in that deck right now. Pick another.');return;}
     items=scope.value==='all'||scope.value==='chapter'?G.pickCards(items,n):G.shuffle(items).slice(0,n);
     form.hidden=true; G.clear(runBox); G.cardSession(runBox,{items:items,onDone:null});
   }
@@ -238,7 +238,7 @@ V.cards=function(root){
 V.write=function(root,args){
   if(args[0]){
     var ex=CTG.EXERCISES.filter(function(e){return e.id===args[0];})[0];
-    if(!ex){root.appendChild(empty('Exercise not found.'));return;}
+    if(!ex){root.appendChild(empty('Can\'t find that exercise — back to the full list.'));return;}
     root.appendChild(h('a',{class:'back',href:'#/write'},G.icon('back',16),'All exercises'));
     var box=h('div',{class:'runbox'}); root.appendChild(box); G.writeSession(box,ex); return;
   }
@@ -254,7 +254,7 @@ V.write=function(root,args){
       if(!exs.length)return; var sec=h('section',{class:'chapter',style:'--hue:'+c.color},h('h2',{},(c.id?'Ch '+c.id+': ':'')+c.title));
       sec.appendChild(h('div',{class:'exlist'},exs.map(function(e){return exCard(e,function(){G.go('#/write/'+e.id);});}))); list.appendChild(sec);
     });
-    if(!list.firstChild) list.appendChild(empty('No exercise matches.'));
+    if(!list.firstChild) list.appendChild(empty('Nothing matches that search. Try fewer words.'));
   }
   q.addEventListener('input',render); bookOnly.addEventListener('change',render);
   root.appendChild(h('div',{class:'filters'},q,h('label',{class:'chk'},bookOnly,'Book exercises only'))); root.appendChild(list); render();
@@ -264,7 +264,7 @@ V.write=function(root,args){
 V.fix=function(root,args){
   if(args[0]){
     var fx=CTG.FIX.filter(function(f){return f.id===args[0];})[0];
-    if(!fx){root.appendChild(empty('Challenge not found.'));return;}
+    if(!fx){root.appendChild(empty('Can\'t find that challenge — back to Fix-it.'));return;}
     root.appendChild(h('a',{class:'back',href:'#/fix'},G.icon('back',16),'All challenges'));
     var box=h('div',{class:'runbox'}); root.appendChild(box);
     G.fixSession(box,fx,{again:function(){var pool=CTG.FIX.filter(function(f){return f.id!==fx.id;}); G.go('#/fix/'+G.pick(pool).id);}}); return;

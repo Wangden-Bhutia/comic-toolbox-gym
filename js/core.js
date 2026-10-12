@@ -247,25 +247,29 @@ G.fillTpl = function(ex){
 };
 
 /* ---------- Achievements ---------- */
+// Names lean on the book's own language where it fits (see PRINCIPLES.md
+// §4 voice rule); 'Sharp Tool' and 'Mastery' are left matching G.LEVELS
+// on purpose, so the achievement stays recognizable against the mastery
+// level it mirrors.
 G.ACH = [
- {id:'first',name:'First Tool',desc:'Read your first lesson.',test:function(){return Object.keys(G.S.read).length>=1;}},
- {id:'ten',name:'Ten Tools',desc:'Read 10 lessons.',test:function(){return Object.keys(G.S.read).length>=10;}},
+ {id:'first',name:'First Rep',desc:'Read your first lesson.',test:function(){return Object.keys(G.S.read).length>=1;}},
+ {id:'ten',name:'Ten Deep',desc:'Read 10 lessons.',test:function(){return Object.keys(G.S.read).length>=10;}},
  {id:'all',name:'Full Toolbox',desc:'Read every lesson.',test:function(){return Object.keys(G.S.read).length>=CTG.TOOLS.length;}},
- {id:'q50',name:'Quizzed',desc:'Answer 50 quiz questions.',test:function(){return G.S.stats.quizN>=50;}},
+ {id:'q50',name:'Quiz Legs',desc:'Answer 50 quiz questions.',test:function(){return G.S.stats.quizN>=50;}},
  {id:'q250',name:'Quiz Machine',desc:'Answer 250 quiz questions.',test:function(){return G.S.stats.quizN>=250;}},
  {id:'c100',name:'Card Shark',desc:'Review 100 flashcards.',test:function(){return G.S.stats.cards>=100;}},
  {id:'ex10',name:'Ten Reps',desc:'Complete 10 writing exercises.',test:function(){return G.S.stats.ex>=10;}},
  {id:'ex50',name:'Wade Boggs',desc:'Complete 50 writing exercises.',test:function(){return G.S.stats.ex>=50;}},
- {id:'fix10',name:'Fixer',desc:'Complete 10 fix-it challenges.',test:function(){return G.S.stats.fix>=10;}},
+ {id:'fix10',name:'Flat-Line Fixer',desc:'Complete 10 fix-it challenges.',test:function(){return G.S.stats.fix>=10;}},
  {id:'w5k',name:'5,000 Words',desc:'Write 5,000 words in exercises.',test:function(){return G.S.stats.words>=5000;}},
  {id:'s3',name:'3-Day Streak',desc:'Practise 3 days in a row.',test:function(){return G.bestStreak()>=3;}},
  {id:'s7',name:'Week Warrior',desc:'Practise 7 days in a row.',test:function(){return G.bestStreak()>=7;}},
  {id:'s30',name:'Drive',desc:'Practise 30 days in a row.',test:function(){return G.bestStreak()>=30;}},
- {id:'wo7',name:'Daily Habit',desc:'Finish 7 daily workouts.',test:function(){return G.S.stats.workouts>=7;}},
+ {id:'wo7',name:'Showing Up',desc:'Finish 7 daily workouts.',test:function(){return G.S.stats.workouts>=7;}},
  {id:'sharp',name:'Sharp Tool',desc:'Reach Sharp level in any tool.',test:function(){return CTG.TOOLS.some(function(t){return G.mastery(t.id).level>=4;});}},
  {id:'master',name:'Mastery',desc:'Reach Mastered in any tool.',test:function(){return CTG.TOOLS.some(function(t){return G.mastery(t.id).level>=5;});}}
 ];
 G.checkAch = function(){
-  G.ACH.forEach(function(a){ if(!G.S.ach[a.id]&&a.test()){G.S.ach[a.id]=Date.now(); G.toast('Achievement unlocked: '+a.name,'ach'); G.save();} });
+  G.ACH.forEach(function(a){ if(!G.S.ach[a.id]&&a.test()){G.S.ach[a.id]=Date.now(); G.toast('Unlocked — '+a.name,'ach'); G.save();} });
 };
 })();

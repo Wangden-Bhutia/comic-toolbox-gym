@@ -223,7 +223,7 @@ G.writeSession = function(box,ex,opts){
     ex.bank?h('button',{type:'button',class:'btn',onclick:newPrompt},G.icon('dice',16),'New prompt'):null,
     h('label',{class:'sel'},'Minutes ',h('select',{disabled:false,'aria-label':'Minutes',onchange:function(){if(started)return;total=+this.value*60;timerEl.textContent=G.fmtTime(total);mins=+this.value;}},
       [3,5,8,10,15,20].concat(ex.minutes&&[3,5,8,10,15,20].indexOf(ex.minutes)<0?[ex.minutes]:[]).sort(function(a,b){return a-b;}).map(function(m){return h('option',{value:m,selected:m===mins},m+' min');}))),
-    h('label',{class:'chk'},h('input',{type:'checkbox',checked:noedit,onchange:function(){noedit=this.checked;G.toast(noedit?'No-edit mode on: backspace and delete are blocked.':'No-edit mode off.');}}),'No-edit mode'),
+    h('label',{class:'chk'},h('input',{type:'checkbox',checked:noedit,onchange:function(){noedit=this.checked;G.toast(noedit?'No-edit mode on. The ferocious editor is locked out — backspace and delete won\'t work.':'No-edit mode off. The editor\'s back in the room.');}}),'No-edit mode'),
     startBtn);
   box.appendChild(h('div',{class:'write'},
     h('div',{class:'wtop'},h('div',{class:'whead'},h('div',{class:'wtitle'},h('div',{class:'muted small'},(tool?tool.name:'')+(ex.book?'  ·  from the book':'')),h('h2',{},ex.title)),timerEl),tbar,countEl),

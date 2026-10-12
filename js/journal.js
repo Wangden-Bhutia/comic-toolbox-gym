@@ -101,7 +101,7 @@ V.journal=function(root){
   // actions
   var note=h('details',{class:'card'},h('summary',{},'Add a quick note'));
   var nt=h('input',{type:'text',placeholder:'Title (optional)','aria-label':'Note title'}), nb=h('textarea',{rows:4,placeholder:'Jot down a joke, jokoid, observation...','aria-label':'Note'});
-  note.appendChild(h('div',{class:'form'},nt,nb,h('button',{type:'button',class:'btn primary',onclick:function(){if(!nb.value.trim())return;G.addJournal({kind:'free',tool:null,title:nt.value.trim()||'Note',content:nb.value.trim(),meta:{words:G.wordCount(nb.value)}});nb.value='';nt.value='';G.addActivity({xp:1,items:1,mins:0.5});render();G.toast('Note added.','ok');}},'Add note')));
+  note.appendChild(h('div',{class:'form'},nt,nb,h('button',{type:'button',class:'btn primary',onclick:function(){if(!nb.value.trim())return;G.addJournal({kind:'free',tool:null,title:nt.value.trim()||'Note',content:nb.value.trim(),meta:{words:G.wordCount(nb.value)}});nb.value='';nt.value='';G.addActivity({xp:1,items:1,mins:0.5});render();G.toast('Noted.','ok');}},'Add note')));
   root.appendChild(note);
   root.appendChild(h('div',{class:'row'},
     h('button',{type:'button',class:'btn',onclick:G.exportJournalJSON},G.icon('download',16),'Export JSON'),
@@ -122,7 +122,7 @@ V.vocab=function(root){
     var v=inp.value.trim(); if(!v)return;
     G.addJournal({kind:'vocab',tool:'vocab',title:'Vocabulary',content:v,meta:{words:G.wordCount(v)}}); G.S.stats.words+=G.wordCount(v);
     G.addActivity({xp:1,items:1,mins:0.4}); inp.value=''; paint(); inp.focus();
-    var n=todays().length; if(n===TARGET) {G.toast('Daily vocabulary target hit. Keep going or stop.','ok');G.announce('Daily target reached.');}
+    var n=todays().length; if(n===TARGET) {G.toast('Today\'s five are in. Wade Boggs took extra batting practice anyway — your call.','ok');G.announce('Daily target reached.');}
   }
   inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();add();}});
   function paint(){

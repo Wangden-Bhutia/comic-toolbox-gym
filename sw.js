@@ -1,5 +1,5 @@
 /* Comic Toolbox Gym service worker. Generated asset list: run `node tools/build-sw.js` after adding files. */
-const VERSION = 'ctg-b420cdd50b';
+const VERSION = 'ctg-3254434ca7';
 const ASSETS = [
   "./",
   ".nojekyll",
@@ -68,5 +68,53 @@ self.addEventListener('fetch', e => {
       if (req.mode === 'navigate') { const idx = await cache.match('index.html'); if (idx) return idx; }
       throw err;
     }
+  }));
+});
+
+// Tier 2 reminder (PRINCIPLES.md §5): best-effort, Chromium-only, opt-in via
+// Settings (see G.enableBgReminder in js/core.js). A service worker has no
+// access to localStorage, so it reads the one flag the page writes to
+// IndexedDB whenever a qualifying (streak-eligible) activity happens, and
+// stays quiet if today is already covered rather than nagging regardless.
+function todayKey() {
+  const d = new Date(), p = n => (n < 10 ? '0' + n : '' + n);
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+function getLastQualifyingDate() {
+  return new Promise(resolve => {
+    try {
+      const req = indexedDB.open('ctg-reminder', 1);
+      req.onupgradeneeded = () => req.result.createObjectStore('flags', { keyPath: 'id' });
+      req.onsuccess = () => {
+        const db = req.result;
+        try {
+          const tx = db.transaction('flags', 'readonly');
+          const getReq = tx.objectStore('flags').get('lastQualifying');
+          getReq.onsuccess = () => { db.close(); resolve(getReq.result && getReq.result.date); };
+          getReq.onerror = () => { db.close(); resolve(null); };
+        } catch (e) { db.close(); resolve(null); }
+      };
+      req.onerror = () => resolve(null);
+    } catch (e) { resolve(null); }
+  });
+}
+self.addEventListener('periodicsync', event => {
+  if (event.tag !== 'daily-reminder') return;
+  event.waitUntil((async () => {
+    const last = await getLastQualifyingDate();
+    if (last === todayKey()) return; // already practiced today — stay quiet
+    await self.registration.showNotification('Comic Toolbox Gym', {
+      body: 'Ten minutes, whenever you’re ready. The editor can wait.',
+      icon: 'icons/icon-192.png',
+      badge: 'icons/icon-192.png',
+      tag: 'daily-reminder'
+    });
+  })());
+});
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(self.clients.matchAll({ type: 'window' }).then(list => {
+    for (const c of list) { if ('focus' in c) return c.focus(); }
+    if (self.clients.openWindow) return self.clients.openWindow('./');
   }));
 });

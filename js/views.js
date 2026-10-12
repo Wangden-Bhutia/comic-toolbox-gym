@@ -29,10 +29,17 @@ V.dashboard=function(root){
   // only. The streak chip already lives in the persistent topbar, so it
   // doesn't need a second copy here. Everything else moves below a clear
   // section break so it isn't competing with the hero's CTA.
+  //
+  // The Tier-1 catch-up reminder (PRINCIPLES.md §5) folds into this same
+  // hero rather than adding a second banner above the fold — it just
+  // changes which state the one CTA is in.
+  var rem=doneToday?null:G.reminderState();
+  var eyebrow=doneToday?'Workout complete':(rem==='missed'?'Picking back up':(rem==='due'?'Still due today':'Today\'s workout'));
+  var headline=doneToday?'You did your 10 minutes. Go again?':(rem==='missed'?'Yesterday slipped — let\'s not make it two':(rem==='due'?'Your 10 minutes are still waiting':'Your 10-minute workout is ready'));
   var hero=h('section',{class:'hero card'},
     h('div',{class:'hero-main'},
-      h('div',{class:'eyebrow'},doneToday?'Workout complete':'Today\'s workout'),
-      h('h2',{},doneToday?'You did your 10 minutes. Go again?':'Your 10-minute workout is ready'),
+      h('div',{class:'eyebrow'},eyebrow),
+      h('h2',{},headline),
       h('p',{class:'muted'},'Built from what is due: '+(next&&!G.S.read[next.id]?'a new lesson, ':'')+Math.min(8,dueC||5)+' cards, 5 quiz questions and a 5-minute writing sprint on your weakest tool.'),
       h('div',{class:'row'},h('a',{class:'btn primary lg',href:'#/workout'},G.icon('bolt',18),doneToday?'Another workout':'Start workout'),
         next?h('a',{class:'btn lg',href:'#/tool/'+next.id},'Next lesson: '+next.name):h('a',{class:'btn lg',href:'#/map'},'Open skill map'))),

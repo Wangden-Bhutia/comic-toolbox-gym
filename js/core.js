@@ -99,7 +99,7 @@ G.hue = function(toolId){var t=G.toolMap[toolId];return t?G.chMap[t.ch].color:20
 
 /* ---------- State ---------- */
 var KEY='ctg.v1';
-function defaults(){return {v:1,settings:{theme:'auto',sound:true,goal:10,noedit:false,name:''},read:{},srs:{},quizLog:[],journal:[],activity:{},workouts:{},seen:{},drafts:{},stats:{quizN:0,quizOk:0,cards:0,ex:0,fix:0,words:0,mins:0,xp:0,workouts:0},ach:{},created:Date.now()};}
+function defaults(){return {v:1,settings:{theme:'auto',sound:true,goal:10,noedit:false,name:'',reminders:{enabled:true,time:'18:00',bg:false}},read:{},srs:{},quizLog:[],journal:[],activity:{},workouts:{},seen:{},drafts:{},stats:{quizN:0,quizOk:0,cards:0,ex:0,fix:0,words:0,mins:0,xp:0,workouts:0},ach:{},created:Date.now()};}
 G.S = defaults();
 G.load = function(){
   try{var raw=localStorage.getItem(KEY); if(raw){var o=JSON.parse(raw); G.S=G.merge(defaults(),o);}}catch(e){console.warn('load failed',e);}
@@ -143,7 +143,7 @@ G.beep = function(){
 G.addActivity = function(o){
   var k=G.today(); var a=G.S.activity[k]||(G.S.activity[k]={mins:0,xp:0,items:0,prod:0});
   a.mins=Math.round((a.mins+(o.mins||0))*10)/10; a.xp+=o.xp||0; a.items+=o.items||0;
-  if(o.qualifies) a.prod=(a.prod||0)+1;
+  if(o.qualifies){ a.prod=(a.prod||0)+1; G.markQualifyingToday(); }
   G.S.stats.mins=Math.round((G.S.stats.mins+(o.mins||0))*10)/10; G.S.stats.xp+=o.xp||0;
   G.save(); G.checkAch();
 };
@@ -157,6 +157,74 @@ G.bestStreak = function(){
   var keys=Object.keys(G.S.activity).filter(function(k){return G.S.activity[k].prod>0;}).sort(); var best=0,cur=0,prev=null;
   keys.forEach(function(k){var p=k.split('-');var dn=G.dayNum(new Date(+p[0],+p[1]-1,+p[2])); if(prev!==null&&dn===prev+1)cur++; else cur=1; prev=dn; if(cur>best)best=cur;});
   return best;
+};
+
+/* ---------- Reminders (PRINCIPLES.md §5) ---------- */
+// Tier 1: in-app catch-up nudge. Works everywhere, no permission needed.
+G.todayDone = function(){var a=G.S.activity[G.today()]; return !!(a&&a.prod>0);};
+G.missedYesterday = function(){
+  var ageMs=Date.now()-(G.S.created||Date.now());
+  if(ageMs<864e5) return false; // too new to have a "yesterday" worth nagging about
+  var d=new Date(); d.setDate(d.getDate()-1);
+  var a=G.S.activity[G.dateKey(d)];
+  return !(a&&a.prod>0);
+};
+G.dueTimeReached = function(){
+  var t=G.S.settings.reminders&&G.S.settings.reminders.time; if(!t) return false;
+  var p=t.split(':'); var now=new Date(); var target=new Date();
+  target.setHours(+p[0]||0,+p[1]||0,0,0);
+  return now>=target;
+};
+// One of 'missed' | 'due' | null, for the dashboard hero to fold into its
+// existing single CTA rather than adding a second competing banner
+// (PRINCIPLES.md §4 "one obvious action per screen").
+G.reminderState = function(){
+  var rem=G.S.settings.reminders;
+  if(!rem||rem.enabled===false||G.todayDone()) return null;
+  if(G.missedYesterday()) return 'missed';
+  if(G.dueTimeReached()) return 'due';
+  return null;
+};
+
+// Tier 2 (best-effort, Chromium/Android/desktop only) reads this flag from
+// IndexedDB, since a service worker cannot see localStorage. Written
+// whenever a qualifying (streak-eligible) activity happens, so a periodic
+// background check can skip notifying on a day already covered.
+var IDB_NAME='ctg-reminder', IDB_STORE='flags';
+G.markQualifyingToday = function(){
+  try{
+    if(!window.indexedDB) return;
+    var req=indexedDB.open(IDB_NAME,1);
+    req.onupgradeneeded=function(){req.result.createObjectStore(IDB_STORE,{keyPath:'id'});};
+    req.onsuccess=function(){
+      var db=req.result;
+      try{var tx=db.transaction(IDB_STORE,'readwrite'); tx.objectStore(IDB_STORE).put({id:'lastQualifying',date:G.today()}); tx.oncomplete=function(){db.close();};}
+      catch(e){db.close();}
+    };
+    req.onerror=function(){};
+  }catch(e){}
+};
+G.bgReminderSupported = function(cb){
+  if(!('serviceWorker' in navigator)||!('Notification' in window)||!/^https?:$/.test(location.protocol)){cb(false);return;}
+  navigator.serviceWorker.ready.then(function(reg){cb('periodicSync' in reg);}).catch(function(){cb(false);});
+};
+G.enableBgReminder = function(cb){
+  if(!('Notification' in window)){cb(false,'Notifications are not available in this browser.');return;}
+  Notification.requestPermission().then(function(perm){
+    if(perm!=='granted'){cb(false,'Permission was not granted.');return;}
+    navigator.serviceWorker.ready.then(function(reg){
+      if(!('periodicSync' in reg)){cb(false,'Background sync is not available on this device or browser (this is normal on iOS Safari and most non-Chromium browsers).');return;}
+      reg.periodicSync.register('daily-reminder',{minInterval:20*60*60*1000}).then(function(){
+        G.S.settings.reminders.bg=true; G.save(); cb(true);
+      }).catch(function(e){cb(false,'Could not register: '+(e&&e.message||e));});
+    });
+  });
+};
+G.disableBgReminder = function(){
+  G.S.settings.reminders.bg=false; G.save();
+  if('serviceWorker' in navigator) navigator.serviceWorker.ready.then(function(reg){
+    if(reg.periodicSync) reg.periodicSync.unregister('daily-reminder').catch(function(){});
+  }).catch(function(){});
 };
 G.level = function(){var xp=G.S.stats.xp; var l=1,need=100,rem=xp; while(rem>=need){rem-=need;l++;need=Math.round(need*1.25);} return {level:l,into:rem,need:need};};
 

@@ -148,6 +148,7 @@ V.settings=function(root){
   root.appendChild(h('section',{class:'card form'},h('h3',{},'Preferences'),
     h('label',{class:'field'},h('span',{},'Theme'),theme),h('label',{class:'field'},h('span',{},'Name'),name),
     h('label',{class:'chk'},sound,'Sound when the timer ends'),h('label',{class:'chk'},ne,'No-edit mode on by default (backspace and delete are blocked while writing, to keep the editor quiet)')));
+  root.appendChild(reminderCard());
   root.appendChild(h('section',{class:'card'},h('h3',{},'Data'),h('div',{class:'row'},
     h('button',{type:'button',class:'btn',onclick:G.exportAll},G.icon('download',16),'Full backup (JSON)'),
     h('button',{type:'button',class:'btn',onclick:G.exportJournalJSON},G.icon('download',16),'Journal JSON'),
@@ -160,6 +161,40 @@ V.settings=function(root){
     h('p',{},'A practice gym for the techniques in ',h('em',{},'The Comic Toolbox: How to Be Funny Even If You\'re Not'),' by John Vorhaus. Lessons, rules and questions are short paraphrases written for practice; they are not a substitute for the book. Buy it, read it, and use this app to make the tools stick.'),
     h('p',{class:'muted small'},CTG.TOOLS.length+' tools · '+CTG.QUIZ.length+' quiz questions · '+CTG.CARDS.length+' flashcards · '+CTG.EXERCISES.length+' exercises · '+CTG.FIX.length+' fix-it challenges · '+Object.keys(CTG.PROMPTS).length+' prompt banks.')));
 };
+function reminderCard(){
+  var S=G.S.settings; S.reminders=S.reminders||{enabled:true,time:'18:00',bg:false};
+  var R=S.reminders;
+  var on=h('input',{type:'checkbox',checked:R.enabled!==false,onchange:function(){R.enabled=this.checked;G.save();}});
+  var time=h('input',{type:'time',value:R.time||'18:00',onchange:function(){R.time=this.value;G.save();}});
+  var bgStatus=h('p',{class:'muted small'},'Checking this device...');
+  var bgRow=h('div',{});
+  var card=h('section',{class:'card form'},h('h3',{},'Reminders'),
+    h('label',{class:'chk'},on,'Nudge me on the dashboard if I missed yesterday or haven\'t practised by a set time'),
+    h('label',{class:'field'},h('span',{},'Remind by'),time),
+    h('p',{class:'muted small'},'This works in the app itself every time it\'s open — no permission needed, works on every device.'),
+    bgRow, bgStatus);
+  G.bgReminderSupported(function(supported){
+    G.clear(bgStatus); G.clear(bgRow);
+    if(!supported){
+      bgStatus.appendChild(document.createTextNode('Background notifications (when the app is closed) aren’t available on this device or browser — this is normal on iOS Safari and most non-Chromium browsers. The nudge above still works whenever you open the app.'));
+      return;
+    }
+    var bg=h('input',{type:'checkbox',checked:!!R.bg,onchange:function(){
+      var cb=this;
+      if(cb.checked){
+        cb.disabled=true;
+        G.enableBgReminder(function(ok,msg){
+          cb.disabled=false;
+          if(ok){G.toast('Background reminders on. Best-effort — your phone/browser still decides when it actually fires.','ok');}
+          else{cb.checked=false;G.toast(msg||'Could not turn this on.','bad');}
+        });
+      } else { G.disableBgReminder(); cb.checked=false; G.toast('Background reminders off.'); }
+    }});
+    bgRow.appendChild(h('label',{class:'chk'},bg,'Also try a background notification (experimental, best-effort)'));
+    bgStatus.appendChild(document.createTextNode('Chromium browsers only, and only once the app is installed and used a few times — the browser decides if and when it actually runs. Off by default.'));
+  });
+  return card;
+}
 function shortcuts(){
   var rows=[['?','Show this help'],['g d','Go to dashboard'],['g m','Skill map'],['g p','Practice hub'],['g w','Timed writing'],['g q','Quiz'],['g c','Flashcards'],['g j','Journal'],['g l','Labs'],['/','Focus search (journal)'],['1-4','Answer a quiz question or rate a card'],['Space','Flip card'],['Enter','Next question'],['Ctrl+Enter','Finish and review (while writing)']];
   return h('table',{class:'kbtable'},h('tbody',{},rows.map(function(r){return h('tr',{},h('td',{},h('kbd',{},r[0])),h('td',{},r[1]));})));
